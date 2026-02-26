@@ -133,8 +133,8 @@ app.layout = html.Div([
 
     html.Div([
         # Filters
-        html.Div([
-            html.Div([
+        dbc.Row([
+            dbc.Col([
                 html.Label("Select Sport(s):"),
                 dcc.Dropdown(
                     id="sport-dropdown",
@@ -144,9 +144,8 @@ app.layout = html.Div([
                     clearable=True,
                     style={"width": "100%"},
                 )
-            ], className="filter-col filter-col-left"),
-
-            html.Div([
+            ], xs=12, md=6),
+            dbc.Col([
                 html.Label("Select Years:"),
                 dcc.Dropdown(
                     id="year-filter",
@@ -154,8 +153,8 @@ app.layout = html.Div([
                     placeholder="Select one or more years",
                     style={"width": "100%"},
                 )
-            ], className="filter-col"),
-        ], className="filter-row"),
+            ], xs=12, md=6),
+        ], className="mb-4"),
 
         html.Div([
             dcc.Checklist(
@@ -167,13 +166,13 @@ app.layout = html.Div([
         ], style={"marginBottom": "30px"}),
 
         # Charts & tables
-        dcc.Graph(id="time-series-graph", className="dashboard-graph graph-timeseries", config={"responsive": True}),
+        dcc.Graph(id="time-series-graph", config={"responsive": True}),
         html.Div(id="conversion-summary"),
-        dcc.Graph(id="program-lines-graph", className="dashboard-graph", config={"responsive": True}),
-        dcc.Graph(id="program-composition-bar-chart", className="dashboard-graph", config={"responsive": True}),
-        dcc.Graph(id="cohort-pie-chart", className="dashboard-graph", config={"responsive": True}),
-        dcc.Graph(id="years-targeted-pie-chart", className="dashboard-graph", config={"responsive": True}),
-        dcc.Graph(id="program-pie-chart", className="dashboard-graph", config={"responsive": True}),
+        dcc.Graph(id="program-lines-graph", config={"responsive": True}),
+        dcc.Graph(id="program-composition-bar-chart", config={"responsive": True}),
+        dcc.Graph(id="cohort-pie-chart", config={"responsive": True}),
+        dcc.Graph(id="years-targeted-pie-chart", config={"responsive": True}),
+        dcc.Graph(id="program-pie-chart", config={"responsive": True}),
 
         html.Div([
             html.Label("Filter Age of Conversion Pie Chart by Program Level:"),
@@ -186,8 +185,8 @@ app.layout = html.Div([
             )
         ], style={"marginBottom": "15px"}),
 
-        dcc.Graph(id="age-conversion-pie-chart", className="dashboard-graph", config={"responsive": True}),
-    ], className="dashboard-content", style={"padding": "0 24px", "maxWidth": "1400px", "margin": "0 auto"}),
+        dcc.Graph(id="age-conversion-pie-chart", config={"responsive": True}),
+    ], style={"padding": "0 24px", "maxWidth": "1400px", "margin": "0 auto"}),
 
     footer_component.render() if footer_component else html.Div(),
 ], style={"paddingBottom": "90px"})
@@ -396,22 +395,25 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
     left_rows = summary_rows[:split_idx]
     right_rows = summary_rows[split_idx:]
 
-    summary_table = html.Div(
+    summary_table = dbc.Row(
         [
-            html.Table([
-                html.Thead([html.Tr([html.Th("Metric"), html.Th("Average")])]),
-                html.Tbody(left_rows),
-            ], className="conversion-summary-table"),
-            html.Table([
-                html.Thead([html.Tr([html.Th("Metric"), html.Th("Average")])]),
-                html.Tbody(right_rows),
-            ], className="conversion-summary-table"),
+            dbc.Col(
+                html.Table([
+                    html.Thead([html.Tr([html.Th("Metric"), html.Th("Average")])]),
+                    html.Tbody(left_rows),
+                ], className="conversion-summary-table"),
+                xs=12, md=6,
+            ),
+            dbc.Col(
+                html.Table([
+                    html.Thead([html.Tr([html.Th("Metric"), html.Th("Average")])]),
+                    html.Tbody(right_rows),
+                ], className="conversion-summary-table"),
+                xs=12, md=6,
+            ),
         ],
-        className="summary-grid",
-        style={
-            "gap": "12px",
-            "alignItems": "start",
-        },
+        className="g-3 mb-3",
+        align="start",
     )
 
     # ── Program-level conversion lines ────────────────────────────────────────
