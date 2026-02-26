@@ -237,6 +237,13 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
 
     dff = df[df['Sport'].isin(selected_sports)].copy()
 
+    if "2026" in filter_2026:
+        key_cols = ['First Name', 'Last Name', 'Sport']
+        dff_year = dff.copy()
+        dff_year['_year_num'] = pd.to_numeric(dff_year['Year'], errors='coerce')
+        has_2026 = dff_year.groupby(key_cols)['_year_num'].transform(lambda s: s.eq(2026).any())
+        dff = dff_year[has_2026].drop(columns=['_year_num']).copy()
+
     if selected_years:
         dff = dff[dff['Year'].isin(selected_years)]
 
@@ -475,10 +482,7 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
     )
 
     # ── Cohort scope for pies ──────────────────────────────────────────────────
-    if "2026" in filter_2026:
-        dff_pies = dff.groupby(['First Name', 'Last Name']).filter(lambda g: (g['Year'] == 2026).any())
-    else:
-        dff_pies = dff
+    dff_pies = dff
 
     # Cohort conversion pie
     conv_by_athlete = (
