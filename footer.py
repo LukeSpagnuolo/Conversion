@@ -24,7 +24,7 @@ class Footer():
                     # Logo or brand link
                     html.A(
                         html.Img(
-                            src="assets/img/csi-pacific-logo-reverse.png",
+                            src="/assets/img/csi-pacific-logo-reverse.png",
                             height="60px",
                         ),
                         href="/builder",
@@ -38,11 +38,17 @@ class Footer():
                     # Navigation links
                     html.Ul(
                         [
-                            # html.Li(html.A("Home", href="#", className="nav-link text-white px-2"), className="nav-item"),
-                            # html.Li(html.A("Features", href="#", className="nav-link text-white px-2"), className="nav-item"),
-                            # html.Li(html.A("Pricing", href="#", className="nav-link text-white px-2"), className="nav-item"),
-                            # html.Li(html.A("FAQs", href="#", className="nav-link text-white px-2"), className="nav-item"),
-                            # html.Li(html.A("About", href="#", className="nav-link text-white px-2"), className="nav-item"),
+                            html.Li(
+                                html.A(
+                                    html.Img(
+                                        src="/assets/img/csi-medal.png",
+                                        height="42px",
+                                    ),
+                                    href="/builder",
+                                    className="text-decoration-none"
+                                ),
+                                className="nav-item"
+                            ),
                         ],
                         className="nav col-md-4 justify-content-end"
                     ),
