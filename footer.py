@@ -24,7 +24,7 @@ class Footer():
                     # Logo or brand link
                     html.A(
                         html.Img(
-                            src="/assets/img/csi-pacific-logo-reverse.png",
+                            src="assets/img/csi-pacific-logo-reverse.png",
                             height="60px",
                         ),
                         href="/builder",
