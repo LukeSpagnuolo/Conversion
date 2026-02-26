@@ -14,13 +14,25 @@
   },
   "files": {
     "Conversion_Dashboard_v2.py": {
-      "checksum": "md5:67c49148d18c3419639aabb19cf2d937"
+      "checksum": "md5:c8f8b6d8e51c2d4dfbf3acf26f059860"
+    },
+    "navbar.py": {
+      "checksum": "md5:bde3f53b45896e4c21bd50fc7325ccb4"
+    },
+    "footer.py": {
+      "checksum": "md5:803366fa7b4c5d8aed1d70ef3ff4485e"
     },
     "requirements.txt": {
       "checksum": "md5:dbe7c5f841ae34a10ddbaeae17462eda"
     },
     "Conversion_Data_2026_final.csv": {
       "checksum": "md5:0ce8b3e0210d18fdb72c0497e9635235"
+    },
+    "assets/img/csi-pacific-logo-reverse.png": {
+      "checksum": "md5:fdc5774f39f8cd3fe808631212d6910e"
+    },
+    "assets/img/csi-medal.png": {
+      "checksum": "md5:51ec11fcee76d692e481784dfeedaf7a"
     }
   }
 }
