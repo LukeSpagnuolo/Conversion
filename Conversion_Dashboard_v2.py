@@ -130,61 +130,63 @@ VIBRANT_PALETTE = [
 app.layout = html.Div([
     navbar_component.render() if navbar_component else html.Div(),
 
-    # Filters
     html.Div([
+        # Filters
         html.Div([
-            html.Label("Select Sport(s):"),
-            dcc.Dropdown(
-                id="sport-dropdown",
-                options=sport_options,
+            html.Div([
+                html.Label("Select Sport(s):"),
+                dcc.Dropdown(
+                    id="sport-dropdown",
+                    options=sport_options,
+                    value=[],
+                    multi=True,
+                    clearable=True,
+                    style={"width": "100%"},
+                )
+            ], style={"width": "48%", "marginRight": "4%"}),
+
+            html.Div([
+                html.Label("Select Years:"),
+                dcc.Dropdown(
+                    id="year-filter",
+                    multi=True,
+                    placeholder="Select one or more years",
+                    style={"width": "100%"},
+                )
+            ], style={"width": "48%"}),
+        ], style={"display": "flex", "marginBottom": "30px"}),
+
+        html.Div([
+            dcc.Checklist(
+                id="has-2026-checkbox",
+                options=[{"label": "Only athletes with 2026 as one of their years", "value": "2026"}],
                 value=[],
-                multi=True,
-                clearable=True,
-                style={"width": "100%"},
+                inputStyle={"margin-right": "10px"},
             )
-        ], style={"width": "48%", "marginRight": "4%"}),
+        ], style={"marginBottom": "30px"}),
+
+        # Charts & tables
+        dcc.Graph(id="time-series-graph"),
+        html.Div(id="conversion-summary"),
+        dcc.Graph(id="program-lines-graph"),
+        dcc.Graph(id="program-composition-bar-chart"),
+        dcc.Graph(id="cohort-pie-chart"),
+        dcc.Graph(id="years-targeted-pie-chart"),
+        dcc.Graph(id="program-pie-chart"),
 
         html.Div([
-            html.Label("Select Years:"),
-            dcc.Dropdown(
-                id="year-filter",
-                multi=True,
-                placeholder="Select one or more years",
-                style={"width": "100%"},
+            html.Label("Filter Age of Conversion Pie Chart by Program Level:"),
+            dcc.Checklist(
+                id="age-pie-program-filter",
+                options=[{"label": p, "value": p} for p in
+                         ["Prov Dev 3", "Prov Dev 2", "Prov Dev 1", "Uncarded", "SC Carded"]],
+                value=[],
+                inline=True,
             )
-        ], style={"width": "48%"}),
-    ], style={"display": "flex", "marginBottom": "30px"}),
+        ], style={"marginBottom": "15px"}),
 
-    html.Div([
-        dcc.Checklist(
-            id="has-2026-checkbox",
-            options=[{"label": "Only athletes with 2026 as one of their years", "value": "2026"}],
-            value=[],
-            inputStyle={"margin-right": "10px"},
-        )
-    ], style={"marginBottom": "30px"}),
-
-    # Charts & tables
-    dcc.Graph(id="time-series-graph"),
-    html.Div(id="conversion-summary"),
-    dcc.Graph(id="program-lines-graph"),
-    dcc.Graph(id="program-composition-bar-chart"),
-    dcc.Graph(id="cohort-pie-chart"),
-    dcc.Graph(id="years-targeted-pie-chart"),
-    dcc.Graph(id="program-pie-chart"),
-
-    html.Div([
-        html.Label("Filter Age of Conversion Pie Chart by Program Level:"),
-        dcc.Checklist(
-            id="age-pie-program-filter",
-            options=[{"label": p, "value": p} for p in
-                     ["Prov Dev 3", "Prov Dev 2", "Prov Dev 1", "Uncarded", "SC Carded"]],
-            value=[],
-            inline=True,
-        )
-    ], style={"marginBottom": "15px"}),
-
-    dcc.Graph(id="age-conversion-pie-chart"),
+        dcc.Graph(id="age-conversion-pie-chart"),
+    ], style={"padding": "0 24px", "maxWidth": "1400px", "margin": "0 auto"}),
 
     footer_component.render() if footer_component else html.Div(),
 ], style={"paddingBottom": "90px"})
