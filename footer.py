@@ -22,18 +22,18 @@ class Footer():
                     ),
 
                     # Logo or brand link
-                    # html.A(
-                    #     html.Img(
-                    #         src="/assets/img/csi-pacific-logo-reverse.png",
-                    #         height="60px",
-                    #     ),
-                    #     href="/",
-                    #     className=(
-                    #         "col-md-4 d-flex align-items-center justify-content-center mb-3"
-                    #         " mb-md-0 me-md-auto text-decoration-none"
-                    #     ),
-                    #     **{"aria-label": "Bootstrap"}
-                    # ),
+                    html.A(
+                        html.Img(
+                            src="/assets/img/csi-pacific-logo-reverse.png",
+                            height="60px",
+                        ),
+                        href="/builder",
+                        className=(
+                            "col-md-4 d-flex align-items-center justify-content-center mb-3"
+                            " mb-md-0 me-md-auto text-decoration-none"
+                        ),
+                        **{"aria-label": "CSI Pacific"}
+                    ),
 
                     # Navigation links
                     html.Ul(

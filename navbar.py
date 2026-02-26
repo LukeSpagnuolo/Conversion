@@ -30,7 +30,7 @@ class Navbar:
                     # Brand / logo
                     dbc.NavbarBrand(
                         [
-                            html.Img(src="assets/img/csi-pacific-logo-reverse.png", height="40px"),
+                            html.Img(src="/assets/img/csi-pacific-logo-reverse.png", height="40px"),
                             html.Span(self.title, className="ms-2 h5 mb-0"),
                         ],
                         href="/builder",
