@@ -4,11 +4,12 @@ from dash.dependencies import Input, Output, State
 import dash_bootstrap_components as dbc
 
 class Navbar:
-    def __init__(self, buttons=None, id="navbar", title="CSIP Apps", expand="lg"):
+    def __init__(self, buttons=None, id="navbar", title="CSIP Apps", expand="lg", logo_src=None):
         self.buttons = buttons or []
         self.id = id
         self.title = title
         self.expand = expand
+        self.logo_src = logo_src or "/assets/img/csi-pacific-logo-reverse.png"
         # unique IDs for toggler/collapse
         self.toggler_id = f"{self.id}-toggler"
         self.collapse_id = f"{self.id}-collapse"
@@ -30,7 +31,7 @@ class Navbar:
                     # Brand / logo
                     dbc.NavbarBrand(
                         [
-                            html.Img(src="/assets/img/csi-pacific-logo-reverse.png", height="40px"),
+                            html.Img(src=self.logo_src, height="40px"),
                             html.Span(self.title, className="ms-2 h5 mb-0"),
                         ],
                         href="/builder",

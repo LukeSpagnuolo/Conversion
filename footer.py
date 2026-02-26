@@ -4,6 +4,10 @@ from dash import html
 
 class Footer():
 
+    def __init__(self, logo_src=None, medal_src=None):
+        self.logo_src = logo_src or "/assets/img/csi-pacific-logo-reverse.png"
+        self.medal_src = medal_src or "/assets/img/csi-medal.png"
+
     def render(self, id="footer"):
         """
         Dash footer component styled with a black background, white text,
@@ -24,7 +28,7 @@ class Footer():
                     # Logo or brand link
                     html.A(
                         html.Img(
-                            src="/assets/img/csi-pacific-logo-reverse.png",
+                            src=self.logo_src,
                             height="60px",
                         ),
                         href="/builder",
@@ -41,7 +45,7 @@ class Footer():
                             html.Li(
                                 html.A(
                                     html.Img(
-                                        src="/assets/img/csi-medal.png",
+                                        src=self.medal_src,
                                         height="42px",
                                     ),
                                     href="/builder",

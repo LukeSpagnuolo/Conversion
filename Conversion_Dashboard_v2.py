@@ -71,11 +71,14 @@ app = dash.Dash(
 navbar_component = None
 footer_component = None
 if BOOTSTRAP_AVAILABLE:
+    logo_src = app.get_asset_url("img/csi-pacific-logo-reverse.png")
+    medal_src = app.get_asset_url("img/csi-medal.png")
     navbar_component = Navbar(
         buttons=[{"label": "Dashboard", "url": "/"}],
         title="CSIP Conversion Dashboard",
+        logo_src=logo_src,
     )
-    footer_component = Footer()
+    footer_component = Footer(logo_src=logo_src, medal_src=medal_src)
 
 # `server` is exposed at module level for Posit Connect / gunicorn:
 #   gunicorn "Conversion_Dashboard_v2:server"
