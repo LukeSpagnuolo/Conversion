@@ -4,9 +4,10 @@ from dash import html
 
 class Footer():
 
-    def __init__(self, logo_src=None, medal_src=None):
+    def __init__(self, logo_src=None, medal_src=None, home_url="https://apps.csipacific.ca/"):
         self.logo_src = logo_src or "/assets/img/csi-pacific-logo-reverse.png"
         self.medal_src = medal_src or "/assets/img/csi-medal.png"
+        self.home_url = home_url
 
     def render(self, id="footer"):
         """
@@ -25,18 +26,19 @@ class Footer():
                         className="col-md-4 mb-0"
                     ),
 
-                    # Logo or brand link
+                    # Logo image
                     html.A(
                         html.Img(
                             src=self.logo_src,
                             height="60px",
                         ),
-                        href="/builder",
+                        href=self.home_url,
+                        target="_blank",
+                        rel="noopener noreferrer",
                         className=(
                             "col-md-4 d-flex align-items-center justify-content-center mb-3"
                             " mb-md-0 me-md-auto text-decoration-none"
                         ),
-                        **{"aria-label": "CSI Pacific"}
                     ),
 
                     # Navigation links
@@ -48,7 +50,9 @@ class Footer():
                                         src=self.medal_src,
                                         height="42px",
                                     ),
-                                    href="/builder",
+                                    href=self.home_url,
+                                    target="_blank",
+                                    rel="noopener noreferrer",
                                     className="text-decoration-none"
                                 ),
                                 className="nav-item"
