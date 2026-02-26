@@ -53,11 +53,12 @@ class Navbar:
                     ),
                 ]
             ),
-            color="dark",
+            color="black",
             dark=True,
             className="p-3",
             id=self.id,
             expand=self.expand,   # collapse below 'lg' (change to 'md' if you want earlier)
+            style={"backgroundColor": "#000000"},
         )
 
     def register_callbacks(self, app: dash.Dash):

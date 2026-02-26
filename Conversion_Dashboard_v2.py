@@ -108,17 +108,6 @@ VIBRANT_PALETTE = [
 app.layout = html.Div([
     navbar_component.render() if navbar_component else html.Div(),
 
-    html.H2("CSIP Conversion Dashboard", style={
-        "color": COLOR_RED,
-        "textAlign": "center",
-        "marginBottom": "30px",
-        "fontWeight": "bold",
-        "fontSize": "2.5em",
-        "borderBottom": f"3px solid {COLOR_RED}",
-        "paddingBottom": "15px",
-        "backgroundColor": COLOR_BLACK,
-    }),
-
     # Filters
     html.Div([
         html.Div([

@@ -49,6 +49,7 @@ class Footer():
                 ],
                     className="d-flex flex-wrap justify-content-between align-items-center py-3  "
                 )],
-            className="mt-4 bg-dark text-white border-top border-light fixed-bottom",
-            id=id
+            className="mt-4 text-white border-top border-light fixed-bottom",
+            id=id,
+            style={"backgroundColor": "#000000"}
         )
