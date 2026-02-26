@@ -1,0 +1,209 @@
+Total unique full names: 16286
+
+Found 294 clusters of similar names:
+
+1. Cluster (23 total records):
+   • emilydickson (17 records)
+   • emilyerickson (6 records)
+
+2. Cluster (22 total records):
+   • brandonpereira (10 records)
+   • brandonperger (12 records)
+
+3. Cluster (18 total records):
+   • juliagrosso (9 records)
+   • juliaross (9 records)
+
+4. Cluster (18 total records):
+   • natashawodak (15 records)
+   • natashawood (3 records)
+
+5. Cluster (18 total records):
+   • ryangood (2 records)
+   • ryanwood (16 records)
+
+6. Cluster (17 total records):
+   • willbrothers (7 records)
+   • willcrothers (10 records)
+
+7. Cluster (15 total records):
+   • andrewcoe (14 records)
+   • andrewcowie (1 records)
+
+8. Cluster (15 total records):
+   • johnperrier (3 records)
+   • johnperrin (12 records)
+
+9. Cluster (14 total records):
+   • aaronahl (3 records)
+   • aaronmah (11 records)
+
+10. Cluster (14 total records):
+   • jordankober (12 records)
+   • jordankoster (2 records)
+
+11. Cluster (14 total records):
+   • michelleliaw (11 records)
+   • michellelim (3 records)
+
+12. Cluster (13 total records):
+   • adammong (2 records)
+   • adamwong (11 records)
+
+13. Cluster (13 total records):
+   • codyfournie (3 records)
+   • codyfournier (10 records)
+
+14. Cluster (13 total records):
+   • elizabethgleadle (10 records)
+   • elizabethlee (3 records)
+
+15. Cluster (13 total records):
+   • sammulligan (12 records)
+   • sammullins (1 records)
+
+16. Cluster (13 total records):
+   • stephaniechen (1 records)
+   • stephaniecho (8 records)
+   • stephaniehansen (4 records)
+
+17. Cluster (12 total records):
+   • cameronsmith (8 records)
+   • cameronsmythe (4 records)
+
+18. Cluster (12 total records):
+   • gracehuang (2 records)
+   • gracezhang (10 records)
+
+19. Cluster (12 total records):
+   • kylenelson (2 records)
+   • kylenielsen (10 records)
+
+20. Cluster (12 total records):
+   • meganau (4 records)
+   • meganchau (1 records)
+   • meganma (7 records)
+
+21. Cluster (12 total records):
+   • richardapeter (4 records)
+   • richardpeter (8 records)
+
+22. Cluster (11 total records):
+   • andreho (10 records)
+   • andrewcho (1 records)
+
+23. Cluster (11 total records):
+   • ashleysmith (6 records)
+   • ashlynsmith (5 records)
+
+24. Cluster (11 total records):
+   • benjaminlee (5 records)
+   • benjaminlemire (1 records)
+   • benjaminleslie (5 records)
+
+25. Cluster (11 total records):
+   • benjaminthorne (7 records)
+   • benjaminturner (4 records)
+
+26. Cluster (11 total records):
+   • gabriellesmith (10 records)
+   • gabrielsmith (1 records)
+
+27. Cluster (11 total records):
+   • gavinjohnson (3 records)
+   • gavinjohnston (8 records)
+
+28. Cluster (11 total records):
+   • laurencrisp (6 records)
+   • laurencurtis (5 records)
+
+29. Cluster (11 total records):
+   • matthewhuang (3 records)
+   • matthewwang (4 records)
+   • matthewzhang (4 records)
+
+30. Cluster (11 total records):
+   • rileymiller (7 records)
+   • rileymilne (4 records)
+
+31. Cluster (10 total records):
+   • ashleyzhou (8 records)
+   • ashleyzhu (2 records)
+
+32. Cluster (10 total records):
+   • brittanywaite (1 records)
+   • brittanywaters (9 records)
+
+33. Cluster (10 total records):
+   • justinejohnson (4 records)
+   • justinjohnson (6 records)
+
+34. Cluster (10 total records):
+   • kevintang (4 records)
+   • kevintian (4 records)
+   • kevinyang (2 records)
+
+35. Cluster (9 total records):
+   • adrianlee (6 records)
+   • adriannalee (3 records)
+
+36. Cluster (9 total records):
+   • cameronho (5 records)
+   • cameronhowie (4 records)
+
+37. Cluster (9 total records):
+   • connorsampson (4 records)
+   • connorsimpson (5 records)
+
+38. Cluster (9 total records):
+   • dylanstevens (8 records)
+   • dylanstevenson (1 records)
+
+39. Cluster (9 total records):
+   • ericneilson (8 records)
+   • ericwilson (1 records)
+
+40. Cluster (9 total records):
+   • jordanhartney (5 records)
+   • jordanharvey (4 records)
+
+41. Cluster (9 total records):
+   • landoncurrie (7 records)
+   • landonmcquarrie (2 records)
+
+42. Cluster (9 total records):
+   • nicolechoi (3 records)
+   • nicolechow (6 records)
+
+43. Cluster (9 total records):
+   • seanbenson (7 records)
+   • seandenison (2 records)
+
+44. Cluster (8 total records):
+   • aaliayhdesousa (1 records)
+   • aaliyahdesousa (7 records)
+
+45. Cluster (8 total records):
+   • ashleyanderson (1 records)
+   • ashleysanderson (7 records)
+
+46. Cluster (8 total records):
+   • benschotts (4 records)
+   • benscott (4 records)
+
+47. Cluster (8 total records):
+   • cassandrabratton (1 records)
+   • cassandrabrown (7 records)
+
+48. Cluster (8 total records):
+   • charlieroberts (5 records)
+   • charlierogers (3 records)
+
+49. Cluster (8 total records):
+   • emmadong (4 records)
+   • emmawong (4 records)
+
+50. Cluster (8 total records):
+   • ericalee (5 records)
+   • ericlee (3 records)
+

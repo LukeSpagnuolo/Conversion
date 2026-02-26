@@ -1,0 +1,138 @@
+================================================================================
+SANITY CHECK: Calculated Metrics for Convert Year and Years Targeted
+================================================================================
+
+Total records: 47006
+Date range: 2008 - 2026
+Number of unique athletes: 17764
+
+================================================================================
+CHECK 1: Years Targeted Consistency
+================================================================================
+
+❌ ISSUE: 1557 athletes have INCONSISTENT 'Years Targeted' values:
+  - Aaron Watson: [np.int64(1), np.int64(3)] (4 records)
+  - Abby Lloyd: [np.int64(2), np.int64(6)] (8 records)
+  - Abby Schmidt: [np.int64(1), np.int64(6)] (7 records)
+  - Abby Speirs: [np.int64(3), np.int64(4)] (7 records)
+  - Abigail Jung: [np.int64(1), np.int64(2)] (3 records)
+  - Abigail Mcleod: [np.int64(1), np.int64(2)] (5 records)
+  - Abigail Stanley: [np.int64(1), np.int64(4)] (5 records)
+  - Abigeyle Bhopal: [np.int64(1), np.int64(5)] (6 records)
+  - Ada Okonkwo: [np.int64(1), np.int64(2)] (3 records)
+  - Adam Wong: [np.int64(1), np.int64(8)] (10 records)
+  - Adaya Townsend: [np.int64(1), np.int64(5)] (7 records)
+  - Addison Dorland: [np.int64(1), np.int64(5)] (6 records)
+  - Adema Boljobek: [np.int64(1), np.int64(2)] (3 records)
+  - Adia Pye: [np.int64(1), np.int64(4)] (6 records)
+  - Adrian Breen: [np.int64(1), np.int64(2)] (3 records)
+  - Adrian Vlasic: [np.int64(1), np.int64(4)] (5 records)
+  - Adrian Wickham: [np.int64(1), np.int64(2)] (3 records)
+  - Adrienne Parkin: [np.int64(1), np.int64(2)] (3 records)
+  - Agnes Esser: [np.int64(1), np.int64(9)] (11 records)
+  - Agnia Krakovska: [np.int64(1), np.int64(2)] (3 records)
+  ... and 1537 more
+
+================================================================================
+CHECK 2: Years Targeted Validation (vs actual count in dataset)
+================================================================================
+
+⚠ WARNING: 2646 athletes have mismatch between 'Years Targeted' and actual years in dataset:
+  ❌ ADAM NASIRI: Targeted=1, Actual=2 (diff: +1)
+  ❌ AJ Stevenson: Targeted=1, Actual=2 (diff: +1)
+  ❌ AMALIE GRIFFITHS: Targeted=1, Actual=2 (diff: +1)
+  ❌ Aaliyah De Sousa: Targeted=1, Actual=2 (diff: +1)
+  ❌ Aanika Jonson: Targeted=1, Actual=2 (diff: +1)
+  ❌ Aanya Gill: Targeted=1, Actual=2 (diff: +1)
+  ❌ Aaron Liu: Targeted=1, Actual=2 (diff: +1)
+  ❌ Aaron MacRae: Targeted=1, Actual=2 (diff: +1)
+  ❌ Aaron Watson: Targeted=1, Actual=4 (diff: +3)
+  ❌ Abby  Charlesworth: Targeted=1, Actual=2 (diff: +1)
+  ❌ Abby Guezen: Targeted=1, Actual=2 (diff: +1)
+  ❌ Abby Lloyd: Targeted=2, Actual=8 (diff: +6)
+  ❌ Abby McEwen: Targeted=1, Actual=3 (diff: +2)
+  ❌ Abby Schmidt: Targeted=6, Actual=7 (diff: +1)
+  ❌ Abby Speirs: Targeted=3, Actual=7 (diff: +4)
+  ❌ Abdu Wieler: Targeted=1, Actual=2 (diff: +1)
+  ❌ Abigail Fu: Targeted=1, Actual=2 (diff: +1)
+  ❌ Abigail Jung: Targeted=2, Actual=3 (diff: +1)
+  ❌ Abigail Mcleod: Targeted=2, Actual=5 (diff: +3)
+  ❌ Abigail Stanley: Targeted=4, Actual=5 (diff: +1)
+  ❌ Abigeyle Bhopal: Targeted=5, Actual=6 (diff: +1)
+  ❌ Abner Alkema: Targeted=1, Actual=2 (diff: +1)
+  ❌ Ada Okonkwo: Targeted=1, Actual=3 (diff: +2)
+  ❌ Adair Chavez: Targeted=1, Actual=2 (diff: +1)
+  ❌ Adam Griesbach: Targeted=1, Actual=2 (diff: +1)
+  ... and 2621 more
+
+================================================================================
+CHECK 3: Convert Year Distribution
+================================================================================
+
+Convert Year value counts:
+  Y (Converted): 4683 (10.0%)
+  N (Not Converted): 42323 (90.0%)
+
+Athletes with at least one 'Convert Year=Y': 3539
+Total unique athletes: 17764
+Athletes without conversion: 14225
+
+================================================================================
+CHECK 4: Program Status at Conversion Records
+================================================================================
+
+Program distribution for 'Convert Year=Y' records:
+  Prov Dev 1: 2153 (46.0%)
+  Uncarded: 1412 (30.2%)
+  SC Carded: 1037 (22.1%)
+  Prov Dev 2: 81 (1.7%)
+
+================================================================================
+CHECK 5: First Conversion Timing
+================================================================================
+
+First conversion year distribution (must convert before or at latest year):
+  Earliest conversion: 2009
+  Latest conversion: 2026
+  Mean: 2017.5
+
+First conversions by year:
+  2009: 180 athletes
+  2010: 211 athletes
+  2011: 283 athletes
+  2012: 234 athletes
+  2013: 167 athletes
+  2014: 199 athletes
+  2015: 199 athletes
+  2016: 167 athletes
+  2017: 174 athletes
+  2018: 206 athletes
+  2019: 206 athletes
+  2020: 133 athletes
+  2021: 104 athletes
+  2022: 190 athletes
+  2023: 233 athletes
+  2024: 69 athletes
+  2025: 285 athletes
+  2026: 299 athletes
+
+================================================================================
+CHECK 6: Data Completeness
+================================================================================
+
+Missing values:
+  Years Targeted: 0
+  Convert Year: 0
+  Program: 3238
+
+================================================================================
+SUMMARY
+================================================================================
+
+Total issues found: 4203
+  - Inconsistent Years Targeted: 1557
+  - Years Targeted mismatches: 2646
+
+⚠ 4203 issues require investigation
+
+================================================================================

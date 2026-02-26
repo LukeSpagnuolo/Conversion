@@ -14,9 +14,16 @@ import pandas as pd
 import plotly.graph_objs as go
 import threading, webbrowser
 
+# Try to import bootstrap theme, fallback to basic app if not available
+try:
+    import dash_bootstrap_components as dbc
+    app = dash.Dash(__name__, external_stylesheets=[dbc.themes.UNITED])
+except ImportError:
+    app = dash.Dash(__name__)
+
 from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
-DF_PATH = BASE_DIR / "Conversion_Data_2025.csv"
+DF_PATH = BASE_DIR / "Conversion_Data_2026_final.csv"
 df = pd.read_csv(DF_PATH)
 
 sports = df['Sport'].sort_values().unique()
@@ -25,10 +32,17 @@ sport_options = [{"label": s, "value": s} for s in sports]
 # — Column options for X/Y selectors (unused but keeping)
 column_options = [{"label": col, "value": col} for col in df.columns]
 
-app = dash.Dash(__name__)
-
 app.layout = html.Div([
-    html.H2("CSIP Conversion Dashboard"),
+    html.H2("CSIP Conversion Dashboard", style={
+        "color": "#DC3545",  # Bootstrap red
+        "textAlign": "center",
+        "marginBottom": "30px",
+        "fontWeight": "bold",
+        "fontSize": "2.5em",
+        "borderBottom": "3px solid #DC3545",
+        "paddingBottom": "15px",
+        "backgroundColor": "#1a1a1a"
+    }),
 
     # Sport filter and year
     html.Div([
@@ -55,13 +69,13 @@ app.layout = html.Div([
         ], style={"width": "48%"})
     ], style={"display": "flex", "marginBottom": "30px"}),
 
-    # Checkbox to limit cohort to athletes with any entry in 2025
+    # Checkbox to limit cohort to athletes with any entry in 2026
     html.Div([
         dcc.Checklist(
-            id="has-2025-checkbox",
+            id="has-2026-checkbox",
             options=[{
-                "label": "Only athletes with 2025 as one of their years",
-                "value": "2025"
+                "label": "Only athletes with 2026 as one of their years",
+                "value": "2026"
             }],
             value=[],
             inputStyle={"margin-right": "10px"}
@@ -82,7 +96,7 @@ app.layout = html.Div([
         dcc.Checklist(
             id="age-pie-program-filter",
             options=[{"label": p, "value": p} for p in
-                     ['Prov Dev 2', 'Prov Dev 1', 'Uncarded', 'SC Carded']],
+                     ['Prov Dev 3', 'Prov Dev 2', 'Prov Dev 1', 'Uncarded', 'SC Carded']],
             value=[],
             inline=True
         )
@@ -97,6 +111,34 @@ def _sports_label(selected_sports):
     if len(selected_sports) <= 3:
         return ", ".join(selected_sports)
     return f"{len(selected_sports)} sports"
+
+# Color scheme: red, black, white
+COLOR_RED = "#DC3545"
+COLOR_BLACK = "#1a1a1a"
+COLOR_DARK_GRAY = "#2d2d2d"
+COLOR_WHITE = "#ffffff"
+
+# Vibrant color palette for high contrast on dark backgrounds
+VIBRANT_PALETTE = [
+    "#FF4444",  # Bright Red
+    "#44FF44",  # Bright Green
+    "#4488FF",  # Bright Blue
+    "#FFBB00",  # Bright Orange
+    "#FF00FF"   # Bright Magenta
+]
+
+# Plotly template for dark theme
+PLOTLY_TEMPLATE = {
+    "layout": {
+        "paper_bgcolor": COLOR_BLACK,
+        "plot_bgcolor": COLOR_DARK_GRAY,
+        "title": {"font": {"color": COLOR_WHITE, "size": 16}},
+        "xaxis": {"title": {"font": {"color": COLOR_WHITE}}, "tickfont": {"color": COLOR_WHITE}, "gridcolor": "#444"},
+        "yaxis": {"title": {"font": {"color": COLOR_WHITE}}, "tickfont": {"color": COLOR_WHITE}, "gridcolor": "#444"},
+        "legend": {"bgcolor": COLOR_DARK_GRAY, "bordercolor": COLOR_RED, "borderwidth": 1, "font": {"color": COLOR_WHITE}},
+        "font": {"color": COLOR_WHITE},
+    }
+}
 
 @app.callback(
     Output("year-filter", "options"),
@@ -120,11 +162,11 @@ def update_year_dropdown(selected_sports):
     Output("program-pie-chart", "figure"),
     Output("age-conversion-pie-chart", "figure"),
     Input("sport-dropdown", "value"),
-    Input("has-2025-checkbox", "value"),
+    Input("has-2026-checkbox", "value"),
     Input("year-filter", "value"),
     Input("age-pie-program-filter", "value")
 )
-def update_graphs(selected_sports, filter_2025, selected_years, prog_filter):
+def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
     # Guard: nothing selected
     if not selected_sports:
         empty_fig = go.Figure()
@@ -137,6 +179,10 @@ def update_graphs(selected_sports, filter_2025, selected_years, prog_filter):
     # Filter by selected years
     if selected_years:
         dff = dff[dff['Year'].isin(selected_years)]
+
+    # Pre-parse dates once to avoid repeated parsing
+    dff['DOB_parsed'] = pd.to_datetime(dff['Date of Birth'], errors='coerce')
+    dff['BirthYear'] = dff['DOB_parsed'].dt.year
 
     # Time-series metrics by Year
     grp = dff.groupby('Year', sort=True)
@@ -172,26 +218,51 @@ def update_graphs(selected_sports, filter_2025, selected_years, prog_filter):
 
     fig_ts.update_layout(
         title=f"Time Series — {_sports_label(selected_sports)}",
-        yaxis=dict(title="Count of Athletes", showgrid=False),
+        template="plotly_dark",
+        paper_bgcolor=COLOR_BLACK,
+        plot_bgcolor=COLOR_DARK_GRAY,
+        font=dict(color=COLOR_WHITE),
+        title_font=dict(color=COLOR_WHITE, size=16),
+        yaxis=dict(title="Count of Athletes", showgrid=True, gridcolor="#444"),
         yaxis2=dict(
             title="Average Years Targeted",
             overlaying="y", side="right", anchor="free",
-            position=1.0, showgrid=False
+            position=1.0, showgrid=True, gridcolor="#444"
         ),
         yaxis3=dict(
             title="Conversion Rate (%)",
             overlaying="y", side="right", anchor="free",
-            position=0.95, tickformat=".0f"
+            position=0.95, tickformat=".0f", gridcolor="#444"
         ),
-        xaxis=dict(title="Year", tickmode="linear", dtick=1, tickformat=".0f")
+        xaxis=dict(title="Year", tickmode="linear", dtick=1, tickformat=".0f", gridcolor="#444"),
+        legend=dict(
+            orientation='h',
+            x=0.5,
+            xanchor='center',
+            y=-0.2,
+            yanchor='top',
+            bgcolor=COLOR_DARK_GRAY,
+            bordercolor=COLOR_RED,
+            borderwidth=2
+        ),
+        margin=dict(l=60, r=120, t=60, b=100),
+        hovermode='x unified'
     )
+    
+    # Update trace colors with vibrant palette for high contrast
+    fig_ts.data[0].line.color = VIBRANT_PALETTE[0]  # Bright Red
+    fig_ts.data[0].line.width = 3
+    fig_ts.data[1].line.color = VIBRANT_PALETTE[1]  # Bright Green
+    fig_ts.data[1].line.width = 3
+    fig_ts.data[2].marker.color = VIBRANT_PALETTE[2]  # Bright Blue
+    fig_ts.data[2].line.color = VIBRANT_PALETTE[2]
+    fig_ts.data[2].line.width = 3
+    fig_ts.data[3].line.color = VIBRANT_PALETTE[3]  # Bright Orange
+    fig_ts.data[3].line.width = 3
 
     # ── Summary Table (now with avg age at first/last targeted) ─────────────
     # Build a clean per-athlete table within the *filtered* cohort
-    dff_age = dff.copy()
-    dff_age['DOB_parsed'] = pd.to_datetime(dff_age['Date of Birth'], errors='coerce')
-    dff_age['BirthYear']  = dff_age['DOB_parsed'].dt.year
-    dff_age = dff_age.dropna(subset=['BirthYear', 'Year'])
+    dff_age = dff[dff['BirthYear'].notna() & dff['Year'].notna()]
     
     # ── Avg. Years Targeted (per athlete) ─────────────────────────────
        # Use each athlete's max Years Targeted within the *filtered* cohort
@@ -209,15 +280,18 @@ def update_graphs(selected_sports, filter_2025, selected_years, prog_filter):
            avg_years_targeted = float('nan')
            n_years = 0
 
-    # Group by athlete (and Sport to avoid collisions for same names in different sports)
-    per_ath = (
+    # Group by athlete — get year range from ALL rows, DOB only from rows with known DOB
+    per_ath_years_range = (
+        dff
+        .groupby(['First Name', 'Last Name', 'Sport'], as_index=False)
+        .agg(first_year=('Year', 'min'), last_year=('Year', 'max'))
+    )
+    per_ath_dob = (
         dff_age
         .groupby(['First Name', 'Last Name', 'Sport'], as_index=False)
-        .agg(first_year=('Year', 'min'),
-             last_year =('Year', 'max'),
-             birth_year=('BirthYear', 'first'))
-        .dropna(subset=['birth_year'])
+        .agg(birth_year=('BirthYear', 'first'))
     )
+    per_ath = per_ath_years_range.merge(per_ath_dob, on=['First Name', 'Last Name', 'Sport'], how='inner')
     per_ath['age_first'] = per_ath['first_year'].astype(int) - per_ath['birth_year'].astype(int)
     per_ath['age_last']  = per_ath['last_year'].astype(int)  - per_ath['birth_year'].astype(int)
 
@@ -234,6 +308,67 @@ def update_graphs(selected_sports, filter_2025, selected_years, prog_filter):
     avg_conv = converted.mean()
     avg_conv_rate = conversion_rate.mean()
 
+    # ── NEW METRICS ──────────────────────────────────────────────────────
+    # 1. CSS athletes count and average years in CSS (only for athletes with CSS=YES)
+    per_ath_css = (
+        dff
+        .groupby(['First Name', 'Last Name'])
+        .apply(lambda g: (g['CSS'] == 'YES').sum())
+        .reset_index(name='css_count')
+    )
+
+    n_css_athletes = int((per_ath_css['css_count'] > 0).sum())
+    css_only = per_ath_css[per_ath_css['css_count'] > 0]
+
+    if not css_only.empty:
+        avg_years_in_css = css_only['css_count'].mean()
+        n_css = len(css_only)
+    else:
+        avg_years_in_css = float('nan')
+        n_css = 0
+
+    # 2. Average gap from first CSS to first conversion to Prov Dev 2 or higher
+    # Define Prov Dev 2+ as levels >= 2 (Prov Dev 2: 2, Prov Dev 1: 3, Uncarded: 4, SC Carded: 5)
+    program_to_level = {
+        'Prov Dev 3': 1,
+        'Prov Dev 2': 2,
+        'Prov Dev 1': 3,
+        'Uncarded': 4,
+        'SC Carded': 5
+    }
+    
+    css_to_convert_gaps = []
+    
+    for athlete_name in dff['Full_Name'].unique():
+        athlete_data = dff[dff['Full_Name'] == athlete_name].sort_values('Year')
+        
+        # Find first year with CSS=YES
+        css_years = athlete_data[athlete_data['CSS'] == 'YES']['Year']
+        if css_years.empty:
+            continue  # Skip athletes without CSS=YES
+        
+        first_css_year = css_years.iloc[0]
+        
+        # Find first year with program level >= 2 (Prov Dev 2 or higher)
+        athlete_data['prog_level'] = athlete_data['Program'].map(program_to_level)
+        high_level_records = athlete_data[athlete_data['prog_level'] >= 2]
+        
+        if high_level_records.empty:
+            continue  # Skip if they never reach Prov Dev 2 or higher
+        
+        first_high_level_year = high_level_records.iloc[0]['Year']
+        
+        # Calculate gap (can be negative if conversion happens before CSS)
+        gap = int(first_high_level_year) - int(first_css_year)
+        css_to_convert_gaps.append(gap)
+    
+    if css_to_convert_gaps:
+        avg_css_to_convert_gap = sum(css_to_convert_gaps) / len(css_to_convert_gaps)
+        n_css_to_convert = len(css_to_convert_gaps)
+    else:
+        avg_css_to_convert_gap = float('nan')
+        n_css_to_convert = 0
+
     summary_table = html.Table([
         html.Thead([html.Tr([html.Th("Metric"), html.Th("Average")])]),
         html.Tbody([
@@ -247,14 +382,24 @@ def update_graphs(selected_sports, filter_2025, selected_years, prog_filter):
             # ⭐ New:
             html.Tr([html.Td("Avg. Years Targeted (per athlete)"),
                      html.Td(f"{avg_years_targeted:.2f}" if n_years else "—")]),
+            
+            # ⭐ NEW METRICS:
+            html.Tr([html.Td("CSS Athletes Count"),
+                     html.Td(f"{n_css_athletes}" if n_css_athletes else "—")]),
+            html.Tr([html.Td("Avg. Years in CSS (CSS athletes only)"),
+                     html.Td(f"{avg_years_in_css:.2f}" if n_css else "—")]),
+            html.Tr([html.Td("CSS Converters Count (CSS → Prov Dev 2+)"),
+                     html.Td(f"{n_css_to_convert}" if n_css_to_convert else "—")]),
+            html.Tr([html.Td("Avg. Years: CSS to Level Up (CSS athletes only)"),
+                     html.Td(f"{avg_css_to_convert_gap:.2f} yrs" if n_css_to_convert else "—")]),
         ])
     ], className="conversion-summary-table")
 
     # Program-level conversion counts (lines)
     prog_year_conv = (
         dff[dff['Convert Year'] == 'Y']
-        .groupby(['Year', 'Program'])[['First Name', 'Last Name']]
-        .apply(lambda g: g.drop_duplicates().shape[0])
+        .groupby(['Year', 'Program'])
+        .size()
         .reset_index(name='Count')
     )
 
@@ -265,30 +410,37 @@ def update_graphs(selected_sports, filter_2025, selected_years, prog_filter):
         .sort_index()
     )
 
-    stack_order = ['Prov Dev 2', 'Prov Dev 1', 'Uncarded', 'SC Carded']
+    stack_order = ['Prov Dev 3', 'Prov Dev 2', 'Prov Dev 1', 'Uncarded', 'SC Carded']
     fig_program_lines = go.Figure()
-    for program in stack_order:
+    for idx, program in enumerate(stack_order):
         if program in prog_line_pivot.columns:
             fig_program_lines.add_trace(go.Scatter(
                 x=prog_line_pivot.index,
                 y=prog_line_pivot[program],
                 mode='lines+markers',
                 name=program,
+                line=dict(color=VIBRANT_PALETTE[idx % len(VIBRANT_PALETTE)], width=3),
+                marker=dict(size=8),
                 hovertemplate='%{y:.0f}'
             ))
     fig_program_lines.update_layout(
         title=f"Converted Athletes by Program Level — {_sports_label(selected_sports)}",
-        xaxis=dict(title='Year', tickmode='linear', dtick=1, tickformat='.0f'),
-        yaxis=dict(title='Conversion Count'),
-        legend=dict(orientation='h', y=-0.2),
+        template="plotly_dark",
+        paper_bgcolor=COLOR_BLACK,
+        plot_bgcolor=COLOR_DARK_GRAY,
+        font=dict(color=COLOR_WHITE),
+        title_font=dict(color=COLOR_WHITE, size=16),
+        xaxis=dict(title='Year', tickmode='linear', dtick=1, tickformat='.0f', gridcolor='#444'),
+        yaxis=dict(title='Conversion Count', gridcolor='#444'),
+        legend=dict(orientation='h', y=-0.2, bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2),
         margin=dict(l=50, r=50, t=60, b=60)
     )
 
     # Program Composition by Year (stacked bar)
     program_year_data = (
         dff
-        .groupby(['Year', 'Program'])[['First Name', 'Last Name']]
-        .apply(lambda g: g.drop_duplicates().shape[0])
+        .groupby(['Year', 'Program'])
+        .size()
         .reset_index(name='Count')
     )
 
@@ -300,24 +452,31 @@ def update_graphs(selected_sports, filter_2025, selected_years, prog_filter):
     )
 
     fig_bar = go.Figure()
-    for program in stack_order:
+    for idx, program in enumerate(stack_order):
         if program in program_pivot.columns:
             fig_bar.add_trace(go.Bar(
                 x=program_pivot.index,
                 y=program_pivot[program],
-                name=program
+                name=program,
+                marker=dict(color=VIBRANT_PALETTE[idx % len(VIBRANT_PALETTE)])
             ))
     fig_bar.update_layout(
         barmode='stack',
         title=f"Program Composition by Year — {_sports_label(selected_sports)}",
-        xaxis=dict(title='Year', tickmode='linear', dtick=1, tickformat='.0f'),
-        yaxis=dict(title='Athlete Count'),
+        template="plotly_dark",
+        paper_bgcolor=COLOR_BLACK,
+        plot_bgcolor=COLOR_DARK_GRAY,
+        font=dict(color=COLOR_WHITE),
+        title_font=dict(color=COLOR_WHITE, size=16),
+        xaxis=dict(title='Year', tickmode='linear', dtick=1, tickformat='.0f', gridcolor='#444'),
+        yaxis=dict(title='Athlete Count', gridcolor='#444'),
+        legend=dict(bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2),
         margin=dict(l=50, r=50, t=60, b=40)
     )
 
     # Cohort scope for pies
-    if "2025" in filter_2025:
-        dff_pies = dff.groupby(['First Name', 'Last Name']).filter(lambda g: (g['Year'] == 2025).any())
+    if "2026" in filter_2026:
+        dff_pies = dff.groupby(['First Name', 'Last Name']).filter(lambda g: (g['Year'] == 2026).any())
     else:
         dff_pies = dff
 
@@ -334,11 +493,16 @@ def update_graphs(selected_sports, filter_2025, selected_years, prog_filter):
         labels=["Career Converter", "Never Converted"],
         values=[num_converted, num_never],
         hole=0.3,
-        sort=False
+        sort=False,
+        marker=dict(colors=[VIBRANT_PALETTE[0], VIBRANT_PALETTE[1]])
     )])
     fig_pie.update_layout(
         title_text=f"Cohort Conversion — {_sports_label(selected_sports)}",
-        legend=dict(traceorder='normal'),
+        template="plotly_dark",
+        paper_bgcolor=COLOR_BLACK,
+        font=dict(color=COLOR_WHITE),
+        title_font=dict(color=COLOR_WHITE, size=16),
+        legend=dict(traceorder='normal', bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2, font=dict(color=COLOR_WHITE)),
         margin=dict(l=40, r=40, t=50, b=40)
     )
 
@@ -352,26 +516,55 @@ def update_graphs(selected_sports, filter_2025, selected_years, prog_filter):
     labels = [f"{yr} yr" for yr in counts.index]
     values = counts.values
 
-    fig_disp = go.Figure(data=[go.Pie(labels=labels, values=values, hole=0.3, sort=False)])
+    fig_disp = go.Figure(data=[go.Pie(
+        labels=labels,
+        values=values,
+        hole=0.3,
+        sort=False,
+        marker=dict(colors=VIBRANT_PALETTE)
+    )])
     fig_disp.update_layout(
         title_text=f"Distribution of Years Targeted — {_sports_label(selected_sports)}",
-        legend=dict(traceorder='normal'),
+        template="plotly_dark",
+        paper_bgcolor=COLOR_BLACK,
+        font=dict(color=COLOR_WHITE),
+        title_font=dict(color=COLOR_WHITE, size=16),
+        legend=dict(traceorder='normal', bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2, font=dict(color=COLOR_WHITE)),
         margin=dict(l=40, r=40, t=50, b=40)
     )
 
     # Program-level conversion pie
     prog_conv = (
         dff_pies[dff_pies['Convert Year'] == 'Y']
-        .groupby('Program')[['First Name', 'Last Name']]
-        .apply(lambda g: g.drop_duplicates().shape[0])
+        .groupby('Program')
+        .size()
         .sort_index()
     )
+    
+    # Map program levels to vibrant colors
+    program_colors = {
+        'Prov Dev 3': VIBRANT_PALETTE[0],
+        'Prov Dev 2': VIBRANT_PALETTE[1],
+        'Prov Dev 1': VIBRANT_PALETTE[2],
+        'Uncarded': VIBRANT_PALETTE[3],
+        'SC Carded': VIBRANT_PALETTE[4]
+    }
+    colors = [program_colors.get(p, VIBRANT_PALETTE[0]) for p in prog_conv.index]
+    
     fig_prog = go.Figure(data=[go.Pie(
-        labels=prog_conv.index, values=prog_conv.values, hole=0.3, sort=False
+        labels=prog_conv.index,
+        values=prog_conv.values,
+        hole=0.3,
+        sort=False,
+        marker=dict(colors=colors)
     )])
     fig_prog.update_layout(
         title_text=f"Conversion by Level — {_sports_label(selected_sports)}",
-        legend=dict(traceorder='normal'),
+        template="plotly_dark",
+        paper_bgcolor=COLOR_BLACK,
+        font=dict(color=COLOR_WHITE),
+        title_font=dict(color=COLOR_WHITE, size=16),
+        legend=dict(traceorder='normal', bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2, font=dict(color=COLOR_WHITE)),
         margin=dict(l=40, r=40, t=50, b=40)
     )
 
@@ -380,14 +573,13 @@ def update_graphs(selected_sports, filter_2025, selected_years, prog_filter):
     if prog_filter:
         conv_rows = conv_rows[conv_rows['Program'].isin(prog_filter)]
 
-    conv_rows['DOB_parsed'] = pd.to_datetime(conv_rows['Date of Birth'], errors='coerce')
-    conv_rows['BirthYear'] = conv_rows['DOB_parsed'].dt.year
+    conv_rows = conv_rows[conv_rows['BirthYear'].notna()]
     conv_rows['AgeAtConvert'] = conv_rows['Year'].astype(int) - conv_rows['BirthYear']
 
     age_counts = (
         conv_rows
-        .groupby('AgeAtConvert')[['First Name', 'Last Name']]
-        .apply(lambda g: g.drop_duplicates().shape[0])
+        .groupby('AgeAtConvert')
+        .size()
         .sort_index()
     )
 
@@ -395,17 +587,29 @@ def update_graphs(selected_sports, filter_2025, selected_years, prog_filter):
         fig_age_pie = go.Figure()
         fig_age_pie.update_layout(
             title_text="No data for selected filters",
+            template="plotly_dark",
+            paper_bgcolor=COLOR_BLACK,
+            font=dict(color=COLOR_WHITE),
+            title_font=dict(color=COLOR_WHITE, size=16),
             margin=dict(l=40, r=40, t=50, b=40)
         )
     else:
+        # Create color list for age groups (cycle through vibrant palette)
+        age_colors = [VIBRANT_PALETTE[i % len(VIBRANT_PALETTE)] for i in range(len(age_counts))]
+        
         fig_age_pie = go.Figure(data=[go.Pie(
             labels=[f"{int(a)} yr" for a in age_counts.index],
             values=age_counts.values,
             hole=0.3,
-            sort=False
+            sort=False,
+            marker=dict(colors=age_colors)
         )])
         fig_age_pie.update_layout(
             title_text=f"Age at Conversion — {_sports_label(selected_sports)}",
+            template="plotly_dark",
+            paper_bgcolor=COLOR_BLACK,
+            font=dict(color=COLOR_WHITE),
+            title_font=dict(color=COLOR_WHITE, size=16),
             margin=dict(l=40, r=40, t=50, b=40)
         )
 

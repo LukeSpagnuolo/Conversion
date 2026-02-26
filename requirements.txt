@@ -1,0 +1,16 @@
+dash>=4.0.0
+pandas>=3.0.0
+plotly>=6.5.2
+
+# Optional: enables Bootstrap theme (UNITED) for improved UI
+# If not installed, the dashboard falls back to the default Dash style
+dash-bootstrap-components>=1.0.0
+
+# Optional: external OAuth provider (e.g. Django OAuth Toolkit)
+# Only activated when CLIENT_ID + CLIENT_SECRET env vars are set on the server.
+# Remove this line if you do not need external OAuth (Posit Connect auth is sufficient).
+dash-auth-external>=0.1.0
+
+# Server / deployment
+python-dotenv>=1.0.0
+gunicorn>=21.0.0

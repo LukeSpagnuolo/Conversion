@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "metadata": {
+    "appmode": "python-dash",
+    "entrypoint": "Conversion_Dashboard_v2"
+  },
+  "python": {
+    "version": "3.12.1",
+    "package_manager": {
+      "name": "pip",
+      "version": "25.3",
+      "package_file": "requirements.txt"
+    }
+  },
+  "files": {
+    "Conversion_Dashboard_v2.py": {
+      "checksum": "md5:67c49148d18c3419639aabb19cf2d937"
+    },
+    "requirements.txt": {
+      "checksum": "md5:dbe7c5f841ae34a10ddbaeae17462eda"
+    },
+    "Conversion_Data_2026_final.csv": {
+      "checksum": "md5:0ce8b3e0210d18fdb72c0497e9635235"
+    }
+  }
+}

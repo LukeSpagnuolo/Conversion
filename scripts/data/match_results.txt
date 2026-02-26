@@ -1,0 +1,68 @@
+================================================================================
+DATASET OVERVIEW
+================================================================================
+CSS Athlete Conversion (Long): 571 rows
+Conversion Data 2026: 43356 rows
+
+Unique athletes in CSS data: 391
+Unique athletes in Conversion 2026: 16556
+
+================================================================================
+NAME MATCHING ANALYSIS (WITH FUZZY MATCHING)
+================================================================================
+Exact matches: 180
+Case-insensitive matches: 7
+Fuzzy matches (>90% similarity): 10
+Total matches: 197
+Names only in CSS data: 194
+Names only in Conversion 2026 data: 16293
+
+================================================================================
+EXAMPLES OF FUZZY MATCHES (>90% similarity)
+================================================================================
+Sophie De Boever               <-> Sophie Deboever                | Similarity: 96.8%
+Kieran Robertson               <-> Kiera Robertson                | Similarity: 96.8%
+Olivia Boulding                <-> Oliva Boulding                 | Similarity: 96.6%
+Anna McDonald                  <-> Anna Macdonald                 | Similarity: 96.3%
+Caleb McConkey                 <-> Cale Mcconkey                  | Similarity: 96.3%
+Braeden Drouillard             <-> Braedan Drouillard             | Similarity: 94.4%
+Nyah MacDonald                 <-> Noah Macdonald                 | Similarity: 92.9%
+Alexandria Henderson           <-> Alexander Henderson            | Similarity: 92.3%
+Haylie Clarke                  <-> Hallie Clarke                  | Similarity: 92.3%
+Reese Sliskovic                <-> Reese Sliskovits               | Similarity: 90.3%
+
+================================================================================
+EXAMPLES OF EXACT MATCHES
+================================================================================
+Abdurezak Wieler               | CSS records:   1 | Conv 2026 records:   1
+Adam Donaldson                 | CSS records:   1 | Conv 2026 records:   5
+Adison Labonte                 | CSS records:   1 | Conv 2026 records:   1
+Aidan Cotter                   | CSS records:   1 | Conv 2026 records:   3
+Aiden Rider                    | CSS records:   2 | Conv 2026 records:   1
+Alexa Pauletto                 | CSS records:   2 | Conv 2026 records:   1
+Ali Zwicker                    | CSS records:   1 | Conv 2026 records:   4
+Amelia Aris                    | CSS records:   2 | Conv 2026 records:   1
+Amelia Mosumgaard              | CSS records:   2 | Conv 2026 records:   1
+Amelia Wells                   | CSS records:   1 | Conv 2026 records:   8
+
+================================================================================
+EXAMPLES OF NAMES ONLY IN CSS DATA (NO MATCH FOUND)
+================================================================================
+abigail hettinga                         | Records: 1
+adele winker                             | Records: 2
+aiden lewis                              | Records: 3
+aja good                                 | Records: 2
+alex barlee                              | Records: 3
+alexa voitik                             | Records: 1
+alia wilson                              | Records: 2
+alysha madsen                            | Records: 1
+alyssa connell                           | Records: 2
+alyssa hansen                            | Records: 1
+
+================================================================================
+SUMMARY
+================================================================================
+Match rate: 50.4% of CSS athletes matched in Conversion 2026
+  - Exact: 180 (46.0%)
+  - Case-insensitive: 7 (1.8%)
+  - Fuzzy (>90%): 10 (2.6%)

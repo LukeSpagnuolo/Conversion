@@ -1,0 +1,19 @@
+# Credentials — never commit
+.env
+
+# Byte-compiled
+__pycache__/
+*.py[cod]
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# macOS
+.DS_Store
