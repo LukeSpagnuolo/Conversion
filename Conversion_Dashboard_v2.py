@@ -137,7 +137,7 @@ app.layout = html.Div([
             dcc.Dropdown(
                 id="sport-dropdown",
                 options=sport_options,
-                value=list(sports),
+                value=[],
                 multi=True,
                 clearable=True,
                 style={"width": "100%"},
