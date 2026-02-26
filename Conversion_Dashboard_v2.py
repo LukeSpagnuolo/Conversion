@@ -70,6 +70,7 @@ app = dash.Dash(
     __name__,
     server=auth.server,
     external_stylesheets=external_stylesheets,
+    meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
 )
 
 
@@ -143,7 +144,7 @@ app.layout = html.Div([
                     clearable=True,
                     style={"width": "100%"},
                 )
-            ], style={"width": "48%", "marginRight": "4%"}),
+            ], className="filter-col filter-col-left"),
 
             html.Div([
                 html.Label("Select Years:"),
@@ -153,8 +154,8 @@ app.layout = html.Div([
                     placeholder="Select one or more years",
                     style={"width": "100%"},
                 )
-            ], style={"width": "48%"}),
-        ], style={"display": "flex", "marginBottom": "30px"}),
+            ], className="filter-col"),
+        ], className="filter-row"),
 
         html.Div([
             dcc.Checklist(
@@ -166,13 +167,13 @@ app.layout = html.Div([
         ], style={"marginBottom": "30px"}),
 
         # Charts & tables
-        dcc.Graph(id="time-series-graph"),
+        dcc.Graph(id="time-series-graph", className="dashboard-graph"),
         html.Div(id="conversion-summary"),
-        dcc.Graph(id="program-lines-graph"),
-        dcc.Graph(id="program-composition-bar-chart"),
-        dcc.Graph(id="cohort-pie-chart"),
-        dcc.Graph(id="years-targeted-pie-chart"),
-        dcc.Graph(id="program-pie-chart"),
+        dcc.Graph(id="program-lines-graph", className="dashboard-graph"),
+        dcc.Graph(id="program-composition-bar-chart", className="dashboard-graph"),
+        dcc.Graph(id="cohort-pie-chart", className="dashboard-graph"),
+        dcc.Graph(id="years-targeted-pie-chart", className="dashboard-graph"),
+        dcc.Graph(id="program-pie-chart", className="dashboard-graph"),
 
         html.Div([
             html.Label("Filter Age of Conversion Pie Chart by Program Level:"),
@@ -185,8 +186,8 @@ app.layout = html.Div([
             )
         ], style={"marginBottom": "15px"}),
 
-        dcc.Graph(id="age-conversion-pie-chart"),
-    ], style={"padding": "0 24px", "maxWidth": "1400px", "margin": "0 auto"}),
+        dcc.Graph(id="age-conversion-pie-chart", className="dashboard-graph"),
+    ], className="dashboard-content", style={"padding": "0 24px", "maxWidth": "1400px", "margin": "0 auto"}),
 
     footer_component.render() if footer_component else html.Div(),
 ], style={"paddingBottom": "90px"})
@@ -406,9 +407,8 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
                 html.Tbody(right_rows),
             ], className="conversion-summary-table"),
         ],
+        className="summary-grid",
         style={
-            "display": "grid",
-            "gridTemplateColumns": "repeat(2, minmax(0, 1fr))",
             "gap": "12px",
             "alignItems": "start",
         },
