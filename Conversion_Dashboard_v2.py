@@ -479,7 +479,10 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
         font=dict(color=COLOR_WHITE), title_font=dict(color=COLOR_WHITE, size=16),
         xaxis=dict(title='Year', tickmode='linear', dtick=1, tickformat='.0f', gridcolor='#444'),
         yaxis=dict(title='Athlete Count', gridcolor='#444'),
-        legend=dict(bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2),
+        legend=dict(
+            orientation='h', x=0.5, xanchor='center', y=-0.2, yanchor='top',
+            bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2,
+        ),
         margin=dict(l=50, r=50, t=60, b=40),
     )
 
@@ -506,8 +509,10 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
         template="plotly_dark",
         paper_bgcolor=COLOR_BLACK, font=dict(color=COLOR_WHITE),
         title_font=dict(color=COLOR_WHITE, size=16),
-        legend=dict(traceorder='normal', bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED,
-                    borderwidth=2, font=dict(color=COLOR_WHITE)),
+        legend=dict(
+            traceorder='normal', orientation='h', x=0.5, xanchor='center', y=-0.2, yanchor='top',
+            bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2, font=dict(color=COLOR_WHITE),
+        ),
         margin=dict(l=40, r=40, t=50, b=40),
     )
 
@@ -525,8 +530,10 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
         template="plotly_dark",
         paper_bgcolor=COLOR_BLACK, font=dict(color=COLOR_WHITE),
         title_font=dict(color=COLOR_WHITE, size=16),
-        legend=dict(traceorder='normal', bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED,
-                    borderwidth=2, font=dict(color=COLOR_WHITE)),
+        legend=dict(
+            traceorder='normal', orientation='h', x=0.5, xanchor='center', y=-0.2, yanchor='top',
+            bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2, font=dict(color=COLOR_WHITE),
+        ),
         margin=dict(l=40, r=40, t=50, b=40),
     )
 
@@ -555,8 +562,10 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
         template="plotly_dark",
         paper_bgcolor=COLOR_BLACK, font=dict(color=COLOR_WHITE),
         title_font=dict(color=COLOR_WHITE, size=16),
-        legend=dict(traceorder='normal', bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED,
-                    borderwidth=2, font=dict(color=COLOR_WHITE)),
+        legend=dict(
+            traceorder='normal', orientation='h', x=0.5, xanchor='center', y=-0.2, yanchor='top',
+            bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2, font=dict(color=COLOR_WHITE),
+        ),
         margin=dict(l=40, r=40, t=50, b=40),
     )
 
@@ -590,6 +599,10 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
             template="plotly_dark",
             paper_bgcolor=COLOR_BLACK, font=dict(color=COLOR_WHITE),
             title_font=dict(color=COLOR_WHITE, size=16),
+            legend=dict(
+                orientation='h', x=0.5, xanchor='center', y=-0.2, yanchor='top',
+                bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2, font=dict(color=COLOR_WHITE),
+            ),
             margin=dict(l=40, r=40, t=50, b=40),
         )
 
