@@ -39,7 +39,6 @@ except ImportError:
 
 if BOOTSTRAP_AVAILABLE:
     from navbar import Navbar
-    from profile import ProfileCard
     from footer import Footer
 
 # ── OAuth / URL Config ──────────────────────────────────────────────────────
@@ -70,18 +69,11 @@ app = dash.Dash(
 )
 
 navbar_component = None
-profile_component = None
 footer_component = None
 if BOOTSTRAP_AVAILABLE:
     navbar_component = Navbar(
         buttons=[{"label": "Dashboard", "url": "/"}],
         title="CSIP Conversion Dashboard",
-    )
-    profile_component = ProfileCard(
-        name="CSIP Analytics",
-        role="Dashboard",
-        organization="CSI Pacific",
-        id_prefix="app-profile",
     )
     footer_component = Footer()
 
@@ -126,11 +118,6 @@ app.layout = html.Div([
         "paddingBottom": "15px",
         "backgroundColor": COLOR_BLACK,
     }),
-
-    html.Div(
-        profile_component.render() if profile_component else html.Div(),
-        style={"display": "flex", "justifyContent": "center", "marginBottom": "30px"},
-    ),
 
     # Filters
     html.Div([
