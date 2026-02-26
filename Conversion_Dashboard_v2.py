@@ -24,6 +24,8 @@ Entry point for gunicorn / Posit Connect:
 """
 
 import os
+import base64
+from pathlib import Path
 
 from dash_auth_external import DashAuthExternal
 import dash
@@ -40,6 +42,8 @@ except ImportError:
 if BOOTSTRAP_AVAILABLE:
     from navbar import Navbar
     from footer import Footer
+
+BASE_DIR = Path(__file__).resolve().parent
 
 # ── OAuth / URL Config ──────────────────────────────────────────────────────
 # Set these in Posit Connect's Vars tab (never hardcode secrets in production)
@@ -68,11 +72,28 @@ app = dash.Dash(
     external_stylesheets=external_stylesheets,
 )
 
+
+def _asset_image_src(asset_subpath: str) -> str:
+    file_path = BASE_DIR / "assets" / asset_subpath
+    if file_path.exists():
+        suffix = file_path.suffix.lower()
+        mime_type = {
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".svg": "image/svg+xml",
+            ".webp": "image/webp",
+            ".gif": "image/gif",
+        }.get(suffix, "application/octet-stream")
+        encoded = base64.b64encode(file_path.read_bytes()).decode("ascii")
+        return f"data:{mime_type};base64,{encoded}"
+    return app.get_asset_url(asset_subpath)
+
 navbar_component = None
 footer_component = None
 if BOOTSTRAP_AVAILABLE:
-    logo_src = app.get_asset_url("img/csi-pacific-logo-reverse.png")
-    medal_src = app.get_asset_url("img/csi-medal.png")
+    logo_src = _asset_image_src("img/csi-pacific-logo-reverse.png")
+    medal_src = _asset_image_src("img/csi-medal.png")
     navbar_component = Navbar(
         buttons=[{"label": "Dashboard", "url": "/"}],
         title="CSIP Conversion Dashboard",
@@ -85,8 +106,6 @@ if BOOTSTRAP_AVAILABLE:
 server = auth.server
 
 # ── Data ─────────────────────────────────────────────────────────────────────
-from pathlib import Path
-BASE_DIR = Path(__file__).resolve().parent
 DF_PATH  = BASE_DIR / "Conversion_Data_2026_final.csv"
 df = pd.read_csv(DF_PATH)
 
