@@ -37,9 +37,14 @@ try:
 except ImportError:
     BOOTSTRAP_AVAILABLE = False
 
+if BOOTSTRAP_AVAILABLE:
+    from navbar import Navbar
+    from profile import ProfileCard
+    from footer import Footer
+
 # ── OAuth / URL Config ──────────────────────────────────────────────────────
 # Set these in Posit Connect's Vars tab (never hardcode secrets in production)
-SITE_URL            = os.environ["SITE_URL"]
+SITE_URL            = os.environ["SITE_URL"].rstrip("/")
 OAUTH_REDIRECT_PATH = os.environ["OAUTH_REDIRECT_PATH"]
 CLIENT_ID           = os.environ["CLIENT_ID"]
 CLIENT_SECRET       = os.environ["CLIENT_SECRET"]
@@ -63,6 +68,22 @@ app = dash.Dash(
     server=auth.server,
     external_stylesheets=external_stylesheets,
 )
+
+navbar_component = None
+profile_component = None
+footer_component = None
+if BOOTSTRAP_AVAILABLE:
+    navbar_component = Navbar(
+        buttons=[{"label": "Dashboard", "url": "/"}],
+        title="CSIP Conversion Dashboard",
+    )
+    profile_component = ProfileCard(
+        name="CSIP Analytics",
+        role="Dashboard",
+        organization="CSI Pacific",
+        id_prefix="app-profile",
+    )
+    footer_component = Footer()
 
 # `server` is exposed at module level for Posit Connect / gunicorn:
 #   gunicorn "Conversion_Dashboard_v2:server"
@@ -93,6 +114,8 @@ VIBRANT_PALETTE = [
 
 # ── Layout ────────────────────────────────────────────────────────────────────
 app.layout = html.Div([
+    navbar_component.render() if navbar_component else html.Div(),
+
     html.H2("CSIP Conversion Dashboard", style={
         "color": COLOR_RED,
         "textAlign": "center",
@@ -103,6 +126,11 @@ app.layout = html.Div([
         "paddingBottom": "15px",
         "backgroundColor": COLOR_BLACK,
     }),
+
+    html.Div(
+        profile_component.render() if profile_component else html.Div(),
+        style={"display": "flex", "justifyContent": "center", "marginBottom": "30px"},
+    ),
 
     # Filters
     html.Div([
@@ -159,7 +187,12 @@ app.layout = html.Div([
     ], style={"marginBottom": "15px"}),
 
     dcc.Graph(id="age-conversion-pie-chart"),
-])
+
+    footer_component.render() if footer_component else html.Div(),
+], style={"paddingBottom": "90px"})
+
+if navbar_component:
+    navbar_component.register_callbacks(app)
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 def _sports_label(selected_sports):

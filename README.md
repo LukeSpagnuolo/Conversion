@@ -31,7 +31,7 @@ gunicorn "Conversion_Dashboard_v2:server"
 ## Deploying to Posit Connect
 
 1. Set the following **environment variables** in the app's *Vars* tab on Posit Connect (do **not** hardcode them):
-   - `SITE_URL` — base URL of your Django OAuth provider
+   - `SITE_URL` — base URL of your Django OAuth provider (no trailing `/`)
    - `OAUTH_REDIRECT_PATH` — the full public redirect URI (your Connect app URL + `/redirect`)
    - `CLIENT_ID`
    - `CLIENT_SECRET`
@@ -45,7 +45,7 @@ gunicorn "Conversion_Dashboard_v2:server"
 
 | Variable | Description |
 |---|---|
-| `SITE_URL` | Base URL of the Django OAuth provider |
+| `SITE_URL` | Base URL of the Django OAuth provider (no trailing `/`) |
 | `OAUTH_REDIRECT_PATH` | Full redirect URI registered on the OAuth provider |
 | `CLIENT_ID` | OAuth2 client ID |
 | `CLIENT_SECRET` | OAuth2 client secret |
