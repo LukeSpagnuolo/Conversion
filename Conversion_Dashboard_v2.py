@@ -167,7 +167,7 @@ app.layout = html.Div([
         ], style={"marginBottom": "30px"}),
 
         # Charts & tables
-        dcc.Graph(id="time-series-graph", className="dashboard-graph"),
+        dcc.Graph(id="time-series-graph", className="dashboard-graph graph-timeseries"),
         html.Div(id="conversion-summary"),
         dcc.Graph(id="program-lines-graph", className="dashboard-graph"),
         dcc.Graph(id="program-composition-bar-chart", className="dashboard-graph"),

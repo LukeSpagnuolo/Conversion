@@ -51,7 +51,19 @@
   .dashboard-graph .js-plotly-plot,
   .dashboard-graph .plot-container,
   .dashboard-graph .plot-container .svg-container {
-    height: 360px !important;
+    height: 420px !important;
+  }
+
+  .graph-timeseries {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .graph-timeseries .js-plotly-plot,
+  .graph-timeseries .plot-container,
+  .graph-timeseries .plot-container .svg-container {
+    min-width: 720px !important;
+    height: 460px !important;
   }
 
   #footer.fixed-bottom {
