@@ -371,20 +371,39 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
         avg_css_to_convert_gap = float('nan')
         n_css_to_convert       = 0
 
-    summary_table = html.Table([
-        html.Thead([html.Tr([html.Th("Metric"), html.Th("Average")])]),
-        html.Tbody([
-            html.Tr([html.Td("Avg. Conversions"),            html.Td(f"{avg_conv:.1f}")]),
-            html.Tr([html.Td("Avg. Conversion Rate"),        html.Td(f"{avg_conv_rate:.1f}%")]),
-            html.Tr([html.Td("Avg. Age — First Targeted"),   html.Td(f"{avg_age_first:.1f} yrs" if n_ath_age else "—")]),
-            html.Tr([html.Td("Avg. Age — Last Targeted"),    html.Td(f"{avg_age_last:.1f} yrs"  if n_ath_age else "—")]),
-            html.Tr([html.Td("Avg. Years Targeted (per athlete)"), html.Td(f"{avg_years_targeted:.2f}" if n_years else "—")]),
-            html.Tr([html.Td("CSS Athletes Count"),          html.Td(f"{n_css_athletes}" if n_css_athletes else "—")]),
-            html.Tr([html.Td("Avg. Years in CSS (CSS athletes only)"), html.Td(f"{avg_years_in_css:.2f}" if n_css else "—")]),
-            html.Tr([html.Td("CSS Converters Count (CSS → Prov Dev 2+)"), html.Td(f"{n_css_to_convert}" if n_css_to_convert else "—")]),
-            html.Tr([html.Td("Avg. Years: CSS to Level Up (CSS athletes only)"), html.Td(f"{avg_css_to_convert_gap:.2f} yrs" if n_css_to_convert else "—")]),
-        ]),
-    ], className="conversion-summary-table")
+    summary_rows = [
+        html.Tr([html.Td("Avg. Conversions"),            html.Td(f"{avg_conv:.1f}")]),
+        html.Tr([html.Td("Avg. Conversion Rate"),        html.Td(f"{avg_conv_rate:.1f}%")]),
+        html.Tr([html.Td("Avg. Age — First Targeted"),   html.Td(f"{avg_age_first:.1f} yrs" if n_ath_age else "—")]),
+        html.Tr([html.Td("Avg. Age — Last Targeted"),    html.Td(f"{avg_age_last:.1f} yrs"  if n_ath_age else "—")]),
+        html.Tr([html.Td("Avg. Years Targeted (per athlete)"), html.Td(f"{avg_years_targeted:.2f}" if n_years else "—")]),
+        html.Tr([html.Td("CSS Athletes Count"),          html.Td(f"{n_css_athletes}" if n_css_athletes else "—")]),
+        html.Tr([html.Td("Avg. Years in CSS (CSS athletes only)"), html.Td(f"{avg_years_in_css:.2f}" if n_css else "—")]),
+        html.Tr([html.Td("CSS Converters Count (CSS → Prov Dev 2+)"), html.Td(f"{n_css_to_convert}" if n_css_to_convert else "—")]),
+        html.Tr([html.Td("Avg. Years: CSS to Level Up (CSS athletes only)"), html.Td(f"{avg_css_to_convert_gap:.2f} yrs" if n_css_to_convert else "—")]),
+    ]
+    split_idx = (len(summary_rows) + 1) // 2
+    left_rows = summary_rows[:split_idx]
+    right_rows = summary_rows[split_idx:]
+
+    summary_table = html.Div(
+        [
+            html.Table([
+                html.Thead([html.Tr([html.Th("Metric"), html.Th("Average")])]),
+                html.Tbody(left_rows),
+            ], className="conversion-summary-table"),
+            html.Table([
+                html.Thead([html.Tr([html.Th("Metric"), html.Th("Average")])]),
+                html.Tbody(right_rows),
+            ], className="conversion-summary-table"),
+        ],
+        style={
+            "display": "grid",
+            "gridTemplateColumns": "repeat(2, minmax(0, 1fr))",
+            "gap": "12px",
+            "alignItems": "start",
+        },
+    )
 
     # ── Program-level conversion lines ────────────────────────────────────────
     stack_order = ['Prov Dev 3', 'Prov Dev 2', 'Prov Dev 1', 'Uncarded', 'SC Carded']
