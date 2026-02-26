@@ -167,13 +167,13 @@ app.layout = html.Div([
         ], style={"marginBottom": "30px"}),
 
         # Charts & tables
-        dcc.Graph(id="time-series-graph", className="dashboard-graph graph-timeseries"),
+        dcc.Graph(id="time-series-graph", className="dashboard-graph graph-timeseries", config={"responsive": True}),
         html.Div(id="conversion-summary"),
-        dcc.Graph(id="program-lines-graph", className="dashboard-graph"),
-        dcc.Graph(id="program-composition-bar-chart", className="dashboard-graph"),
-        dcc.Graph(id="cohort-pie-chart", className="dashboard-graph"),
-        dcc.Graph(id="years-targeted-pie-chart", className="dashboard-graph"),
-        dcc.Graph(id="program-pie-chart", className="dashboard-graph"),
+        dcc.Graph(id="program-lines-graph", className="dashboard-graph", config={"responsive": True}),
+        dcc.Graph(id="program-composition-bar-chart", className="dashboard-graph", config={"responsive": True}),
+        dcc.Graph(id="cohort-pie-chart", className="dashboard-graph", config={"responsive": True}),
+        dcc.Graph(id="years-targeted-pie-chart", className="dashboard-graph", config={"responsive": True}),
+        dcc.Graph(id="program-pie-chart", className="dashboard-graph", config={"responsive": True}),
 
         html.Div([
             html.Label("Filter Age of Conversion Pie Chart by Program Level:"),
@@ -186,7 +186,7 @@ app.layout = html.Div([
             )
         ], style={"marginBottom": "15px"}),
 
-        dcc.Graph(id="age-conversion-pie-chart", className="dashboard-graph"),
+        dcc.Graph(id="age-conversion-pie-chart", className="dashboard-graph", config={"responsive": True}),
     ], className="dashboard-content", style={"padding": "0 24px", "maxWidth": "1400px", "margin": "0 auto"}),
 
     footer_component.render() if footer_component else html.Div(),
