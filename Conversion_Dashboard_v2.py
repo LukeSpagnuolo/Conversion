@@ -166,7 +166,7 @@ app.layout = html.Div([
         ], style={"marginBottom": "30px"}),
 
         # Charts & tables
-        dcc.Graph(id="time-series-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0}),
+        dcc.Graph(id="time-series-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "500px"}),
         html.Div(id="conversion-summary"),
         dcc.Graph(id="program-lines-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0}),
         dcc.Graph(id="program-composition-bar-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0}),
@@ -290,14 +290,15 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
         title_font=dict(color=COLOR_WHITE, size=16),
         yaxis=dict(title="Count of Athletes", showgrid=True, gridcolor="#444"),
         yaxis2=dict(title="Avg Yrs Targeted", overlaying="y", side="right",
-                    anchor="free", position=0.80, showgrid=False),
+                    anchor="free", position=0.78, showgrid=False),
         yaxis3=dict(title="Conv. Rate (%)", overlaying="y", side="right",
                     anchor="free", position=1.0, tickformat=".0f", showgrid=False),
         xaxis=dict(title="Year", tickmode="linear", dtick=1, tickformat=".0f", gridcolor="#444",
-                   domain=[0, 0.75]),
+                   domain=[0, 0.72]),
         legend=dict(orientation='h', x=0.5, xanchor='center', y=-0.2, yanchor='top',
                     bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2),
         margin=dict(l=50, r=20, t=50, b=100),
+        height=500,
         hovermode='x unified',
         autosize=True,
     )
