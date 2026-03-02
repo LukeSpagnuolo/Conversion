@@ -166,13 +166,13 @@ app.layout = html.Div([
         ], style={"marginBottom": "30px"}),
 
         # Charts & tables
-        dcc.Graph(id="time-series-graph", config={"responsive": True}),
+        dcc.Graph(id="time-series-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0}),
         html.Div(id="conversion-summary"),
-        dcc.Graph(id="program-lines-graph", config={"responsive": True}),
-        dcc.Graph(id="program-composition-bar-chart", config={"responsive": True}),
-        dcc.Graph(id="cohort-pie-chart", config={"responsive": True}),
-        dcc.Graph(id="years-targeted-pie-chart", config={"responsive": True}),
-        dcc.Graph(id="program-pie-chart", config={"responsive": True}),
+        dcc.Graph(id="program-lines-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0}),
+        dcc.Graph(id="program-composition-bar-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0}),
+        dcc.Graph(id="cohort-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0}),
+        dcc.Graph(id="years-targeted-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0}),
+        dcc.Graph(id="program-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0}),
 
         html.Div([
             html.Label("Filter Age of Conversion Pie Chart by Program Level:"),
@@ -185,8 +185,8 @@ app.layout = html.Div([
             )
         ], style={"marginBottom": "15px"}),
 
-        dcc.Graph(id="age-conversion-pie-chart", config={"responsive": True}),
-    ], style={"padding": "0 24px", "maxWidth": "1400px", "margin": "0 auto"}),
+        dcc.Graph(id="age-conversion-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0}),
+    ], style={"padding": "0 12px", "maxWidth": "1400px", "margin": "0 auto", "overflowX": "hidden"}),
 
     footer_component.render() if footer_component else html.Div(),
 ], style={"paddingBottom": "90px"})
@@ -296,8 +296,9 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
         xaxis=dict(title="Year", tickmode="linear", dtick=1, tickformat=".0f", gridcolor="#444"),
         legend=dict(orientation='h', x=0.5, xanchor='center', y=-0.2, yanchor='top',
                     bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2),
-        margin=dict(l=60, r=120, t=60, b=100),
+        margin=dict(l=40, r=100, t=50, b=100),
         hovermode='x unified',
+        autosize=True,
     )
     fig_ts.data[0].line.color = VIBRANT_PALETTE[0]
     fig_ts.data[0].line.width = 3
@@ -449,7 +450,8 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
         xaxis=dict(title='Year', tickmode='linear', dtick=1, tickformat='.0f', gridcolor='#444'),
         yaxis=dict(title='Conversion Count', gridcolor='#444'),
         legend=dict(orientation='h', y=-0.2, bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2),
-        margin=dict(l=50, r=50, t=60, b=60),
+        margin=dict(l=40, r=30, t=50, b=60),
+        autosize=True,
     )
 
     # ── Program composition stacked bar ───────────────────────────────────────
@@ -485,7 +487,8 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
             orientation='h', x=0.5, xanchor='center', y=-0.2, yanchor='top',
             bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2,
         ),
-        margin=dict(l=50, r=50, t=60, b=40),
+        margin=dict(l=40, r=30, t=50, b=40),
+        autosize=True,
     )
 
     # ── Cohort scope for pies ──────────────────────────────────────────────────
@@ -515,7 +518,8 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
             traceorder='normal', orientation='h', x=0.5, xanchor='center', y=-0.2, yanchor='top',
             bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2, font=dict(color=COLOR_WHITE),
         ),
-        margin=dict(l=40, r=40, t=50, b=40),
+        margin=dict(l=30, r=30, t=50, b=40),
+        autosize=True,
     )
 
     # Years-targeted dispersion pie
@@ -536,7 +540,8 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
             traceorder='normal', orientation='h', x=0.5, xanchor='center', y=-0.2, yanchor='top',
             bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2, font=dict(color=COLOR_WHITE),
         ),
-        margin=dict(l=40, r=40, t=50, b=40),
+        margin=dict(l=30, r=30, t=50, b=40),
+        autosize=True,
     )
 
     # Program-level conversion pie
@@ -568,7 +573,8 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
             traceorder='normal', orientation='h', x=0.5, xanchor='center', y=-0.2, yanchor='top',
             bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2, font=dict(color=COLOR_WHITE),
         ),
-        margin=dict(l=40, r=40, t=50, b=40),
+        margin=dict(l=30, r=30, t=50, b=40),
+        autosize=True,
     )
 
     # Age-at-conversion pie
@@ -586,7 +592,8 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
             template="plotly_dark",
             paper_bgcolor=COLOR_BLACK, font=dict(color=COLOR_WHITE),
             title_font=dict(color=COLOR_WHITE, size=16),
-            margin=dict(l=40, r=40, t=50, b=40),
+            margin=dict(l=30, r=30, t=50, b=40),
+            autosize=True,
         )
     else:
         age_colors = [VIBRANT_PALETTE[i % len(VIBRANT_PALETTE)] for i in range(len(age_counts))]
@@ -605,7 +612,8 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
                 orientation='h', x=0.5, xanchor='center', y=-0.2, yanchor='top',
                 bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2, font=dict(color=COLOR_WHITE),
             ),
-            margin=dict(l=40, r=40, t=50, b=40),
+            margin=dict(l=30, r=30, t=50, b=40),
+            autosize=True,
         )
 
     return (fig_ts, summary_table, fig_program_lines, fig_bar,
