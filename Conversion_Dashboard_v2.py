@@ -599,9 +599,16 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
         )
     else:
         age_colors = [VIBRANT_PALETTE[i % len(VIBRANT_PALETTE)] for i in range(len(age_counts))]
+        _total = age_counts.sum()
+        _pct_text = [
+            f"{int(a)} yr<br>{v/_total*100:.1f}%" if v / _total * 100 >= 2 else ""
+            for a, v in zip(age_counts.index, age_counts.values)
+        ]
         fig_age_pie = go.Figure(data=[go.Pie(
             labels=[f"{int(a)} yr" for a in age_counts.index],
             values=age_counts.values,
+            text=_pct_text,
+            textinfo='text',
             hole=0.3, sort=False,
             marker=dict(colors=age_colors),
         )])
