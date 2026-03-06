@@ -235,8 +235,10 @@ app.clientside_callback(
         var pageW = pdf.internal.pageSize.getWidth();
         var pageH = pdf.internal.pageSize.getHeight();
         var margin = 8;
+        var gap = 4;
         var usableW = pageW - 2 * margin;
         var usableH = pageH - 2 * margin;
+        var cursorY = margin;
         var isFirst = true;
         els.reduce(function(promise, el) {
             return promise.then(function() {
@@ -245,13 +247,19 @@ app.clientside_callback(
                     var imgData = canvas.toDataURL('image/png');
                     var imgW = usableW;
                     var imgH = (canvas.height * imgW) / canvas.width;
+                    /* if taller than a full page, scale down to fit */
                     if (imgH > usableH) {
                         imgH = usableH;
                         imgW = (canvas.width * imgH) / canvas.height;
                     }
                     var x = margin + (usableW - imgW) / 2;
-                    if (!isFirst) { pdf.addPage(); }
-                    pdf.addImage(imgData, 'PNG', x, margin, imgW, imgH);
+                    /* new page if not enough vertical space */
+                    if (!isFirst && cursorY + imgH > pageH - margin) {
+                        pdf.addPage();
+                        cursorY = margin;
+                    }
+                    pdf.addImage(imgData, 'PNG', x, cursorY, imgW, imgH);
+                    cursorY += imgH + gap;
                     isFirst = false;
                 });
             });
