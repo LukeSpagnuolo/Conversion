@@ -138,6 +138,16 @@ app.layout = html.Div([
     navbar_component.render() if navbar_component else html.Div(),
 
     html.Div(id="main-content", children=[
+        dbc.Row([
+            dbc.Col([
+                dbc.Button("⬇ Download CSV", id="btn-download-csv", color="primary", className="me-2"),
+                dbc.Button("🖨 Download PDF", id="btn-download-pdf", color="secondary"),
+                dcc.Download(id="download-csv"),
+                html.Div(id="pdf-dummy", style={"display": "none"}),
+            ], style={"textAlign": "right"}),
+        ], className="mb-3"),
+
+        html.Div(id="pdf-content", children=[
         # Filters
         dbc.Row([
             dbc.Col([
@@ -171,15 +181,6 @@ app.layout = html.Div([
             )
         ], style={"marginBottom": "20px"}),
 
-        dbc.Row([
-            dbc.Col([
-                dbc.Button("⬇ Download CSV", id="btn-download-csv", color="primary", className="me-2"),
-                dbc.Button("🖨 Download PDF", id="btn-download-pdf", color="secondary"),
-                dcc.Download(id="download-csv"),
-                html.Div(id="pdf-dummy", style={"display": "none"}),
-            ], style={"textAlign": "right"}),
-        ], className="mb-4"),
-
         # Charts & tables
         dcc.Graph(id="time-series-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "500px"}),
         html.Div(id="conversion-summary"),
@@ -201,6 +202,7 @@ app.layout = html.Div([
         ], style={"marginBottom": "15px"}),
 
         dcc.Graph(id="age-conversion-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
+        ]),  # end pdf-content
     ], style={"padding": "0 12px", "maxWidth": "1400px", "margin": "0 auto", "overflowX": "hidden"}),
 
     footer_component.render() if footer_component else html.Div(),
@@ -213,7 +215,7 @@ app.clientside_callback(
     """
     function(n_clicks) {
         if (!n_clicks) return window.dash_clientside.no_update;
-        var el = document.getElementById('main-content');
+        var el = document.getElementById('pdf-content');
         html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#1a1a1a' }).then(function(canvas) {
             var imgData = canvas.toDataURL('image/png');
             var pdf = new jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
