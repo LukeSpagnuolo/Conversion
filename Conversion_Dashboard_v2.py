@@ -149,6 +149,7 @@ app.layout = html.Div([
 
         html.Div(id="pdf-content", children=[
         # Filters
+        html.Div(id="pdf-filters", children=[
         dbc.Row([
             dbc.Col([
                 html.Label("Select Sport(s):"),
@@ -180,6 +181,7 @@ app.layout = html.Div([
                 inputStyle={"margin-right": "10px"},
             )
         ], style={"marginBottom": "20px"}),
+        ]),  # end pdf-filters
 
         # Charts & tables
         dcc.Graph(id="time-series-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "500px"}),
@@ -190,7 +192,7 @@ app.layout = html.Div([
         dcc.Graph(id="years-targeted-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
         dcc.Graph(id="program-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
 
-        html.Div([
+        html.Div(id="pdf-age-filter", children=[
             html.Label("Filter Age of Conversion Pie Chart by Program Level:"),
             dcc.Checklist(
                 id="age-pie-program-filter",
@@ -215,23 +217,45 @@ app.clientside_callback(
     """
     function(n_clicks) {
         if (!n_clicks) return window.dash_clientside.no_update;
-        var el = document.getElementById('pdf-content');
-        html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#1a1a1a' }).then(function(canvas) {
-            var imgData = canvas.toDataURL('image/png');
-            var pdf = new jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-            var pageW = pdf.internal.pageSize.getWidth();
-            var pageH = pdf.internal.pageSize.getHeight();
-            var imgH = (canvas.height * pageW) / canvas.width;
-            var remaining = imgH;
-            var pos = 0;
-            pdf.addImage(imgData, 'PNG', 0, pos, pageW, imgH);
-            remaining -= pageH;
-            while (remaining > 0) {
-                pos -= pageH;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 0, pos, pageW, imgH);
-                remaining -= pageH;
-            }
+        var ids = [
+            'pdf-filters',
+            'conversion-summary',
+            'time-series-graph',
+            'program-lines-graph',
+            'program-composition-bar-chart',
+            'cohort-pie-chart',
+            'years-targeted-pie-chart',
+            'program-pie-chart',
+            'pdf-age-filter',
+            'age-conversion-pie-chart'
+        ];
+        var els = ids.map(function(id) { return document.getElementById(id); })
+                     .filter(function(el) { return el !== null; });
+        var pdf = new jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        var pageW = pdf.internal.pageSize.getWidth();
+        var pageH = pdf.internal.pageSize.getHeight();
+        var margin = 8;
+        var usableW = pageW - 2 * margin;
+        var usableH = pageH - 2 * margin;
+        var isFirst = true;
+        els.reduce(function(promise, el) {
+            return promise.then(function() {
+                return html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#1a1a1a' }).then(function(canvas) {
+                    if (canvas.width === 0 || canvas.height === 0) return;
+                    var imgData = canvas.toDataURL('image/png');
+                    var imgW = usableW;
+                    var imgH = (canvas.height * imgW) / canvas.width;
+                    if (imgH > usableH) {
+                        imgH = usableH;
+                        imgW = (canvas.width * imgH) / canvas.height;
+                    }
+                    var x = margin + (usableW - imgW) / 2;
+                    if (!isFirst) { pdf.addPage(); }
+                    pdf.addImage(imgData, 'PNG', x, margin, imgW, imgH);
+                    isFirst = false;
+                });
+            });
+        }, Promise.resolve()).then(function() {
             pdf.save('conversion_report.pdf');
         });
         return window.dash_clientside.no_update;
