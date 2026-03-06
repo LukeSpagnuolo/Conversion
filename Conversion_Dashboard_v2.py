@@ -66,10 +66,16 @@ auth = DashAuthExternal(
 
 external_stylesheets = [dbc.themes.UNITED] if BOOTSTRAP_AVAILABLE else []
 
+external_scripts = [
+    "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
+    "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+]
+
 app = dash.Dash(
     __name__,
     server=auth.server,
     external_stylesheets=external_stylesheets,
+    external_scripts=external_scripts,
     meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"}],
 )
 
@@ -131,7 +137,7 @@ VIBRANT_PALETTE = [
 app.layout = html.Div([
     navbar_component.render() if navbar_component else html.Div(),
 
-    html.Div([
+    html.Div(id="main-content", children=[
         # Filters
         dbc.Row([
             dbc.Col([
@@ -206,7 +212,26 @@ if navbar_component:
 app.clientside_callback(
     """
     function(n_clicks) {
-        if (n_clicks) { window.print(); }
+        if (!n_clicks) return window.dash_clientside.no_update;
+        var el = document.getElementById('main-content');
+        html2canvas(el, { scale: 2, useCORS: true, backgroundColor: '#1a1a1a' }).then(function(canvas) {
+            var imgData = canvas.toDataURL('image/png');
+            var pdf = new jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            var pageW = pdf.internal.pageSize.getWidth();
+            var pageH = pdf.internal.pageSize.getHeight();
+            var imgH = (canvas.height * pageW) / canvas.width;
+            var remaining = imgH;
+            var pos = 0;
+            pdf.addImage(imgData, 'PNG', 0, pos, pageW, imgH);
+            remaining -= pageH;
+            while (remaining > 0) {
+                pos -= pageH;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, pos, pageW, imgH);
+                remaining -= pageH;
+            }
+            pdf.save('conversion_report.pdf');
+        });
         return window.dash_clientside.no_update;
     }
     """,
