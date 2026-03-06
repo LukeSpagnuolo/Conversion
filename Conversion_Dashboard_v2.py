@@ -29,7 +29,7 @@ from pathlib import Path
 
 from dash_auth_external import DashAuthExternal
 import dash
-from dash import dcc, html, Input, Output
+from dash import dcc, html, Input, Output, State
 import pandas as pd
 import plotly.graph_objs as go
 
@@ -163,7 +163,16 @@ app.layout = html.Div([
                 value=[],
                 inputStyle={"margin-right": "10px"},
             )
-        ], style={"marginBottom": "30px"}),
+        ], style={"marginBottom": "20px"}),
+
+        dbc.Row([
+            dbc.Col([
+                dbc.Button("⬇ Download CSV", id="btn-download-csv", color="primary", className="me-2"),
+                dbc.Button("🖨 Download PDF", id="btn-download-pdf", color="secondary"),
+                dcc.Download(id="download-csv"),
+                html.Div(id="pdf-dummy", style={"display": "none"}),
+            ], style={"textAlign": "right"}),
+        ], className="mb-4"),
 
         # Charts & tables
         dcc.Graph(id="time-series-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "500px"}),
@@ -194,6 +203,18 @@ app.layout = html.Div([
 if navbar_component:
     navbar_component.register_callbacks(app)
 
+app.clientside_callback(
+    """
+    function(n_clicks) {
+        if (n_clicks) { window.print(); }
+        return window.dash_clientside.no_update;
+    }
+    """,
+    Output("pdf-dummy", "children"),
+    Input("btn-download-pdf", "n_clicks"),
+    prevent_initial_call=True,
+)
+
 # ── Helpers ──────────────────────────────────────────────────────────────────
 def _sports_label(selected_sports):
     if not selected_sports:
@@ -204,6 +225,28 @@ def _sports_label(selected_sports):
 
 
 # ── Callbacks ─────────────────────────────────────────────────────────────────
+@app.callback(
+    Output("download-csv", "data"),
+    Input("btn-download-csv", "n_clicks"),
+    State("sport-dropdown", "value"),
+    State("has-2026-checkbox", "value"),
+    State("year-filter", "value"),
+    prevent_initial_call=True,
+)
+def download_filtered_csv(n_clicks, selected_sports, filter_2026, selected_years):
+    if not selected_sports:
+        return dash.no_update
+    dff = df[df['Sport'].isin(selected_sports)].copy()
+    if filter_2026 and "2026" in filter_2026:
+        key_cols = ['First Name', 'Last Name', 'Sport']
+        dff['_year_num'] = pd.to_numeric(dff['Year'], errors='coerce')
+        has_2026 = dff.groupby(key_cols)['_year_num'].transform(lambda s: s.eq(2026).any())
+        dff = dff[has_2026].drop(columns=['_year_num']).copy()
+    if selected_years:
+        dff = dff[dff['Year'].isin(selected_years)]
+    return dcc.send_data_frame(dff.to_csv, "conversion_data_filtered.csv", index=False)
+
+
 @app.callback(
     Output("year-filter", "options"),
     Output("year-filter", "value"),
