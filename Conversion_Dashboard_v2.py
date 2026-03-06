@@ -168,11 +168,11 @@ app.layout = html.Div([
         # Charts & tables
         dcc.Graph(id="time-series-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "500px"}),
         html.Div(id="conversion-summary"),
-        dcc.Graph(id="program-lines-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0}),
-        dcc.Graph(id="program-composition-bar-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0}),
-        dcc.Graph(id="cohort-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0}),
-        dcc.Graph(id="years-targeted-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0}),
-        dcc.Graph(id="program-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0}),
+        dcc.Graph(id="program-lines-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
+        dcc.Graph(id="program-composition-bar-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
+        dcc.Graph(id="cohort-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
+        dcc.Graph(id="years-targeted-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
+        dcc.Graph(id="program-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
 
         html.Div([
             html.Label("Filter Age of Conversion Pie Chart by Program Level:"),
@@ -185,7 +185,7 @@ app.layout = html.Div([
             )
         ], style={"marginBottom": "15px"}),
 
-        dcc.Graph(id="age-conversion-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0}),
+        dcc.Graph(id="age-conversion-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
     ], style={"padding": "0 12px", "maxWidth": "1400px", "margin": "0 auto", "overflowX": "hidden"}),
 
     footer_component.render() if footer_component else html.Div(),
@@ -453,6 +453,7 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
         yaxis=dict(title='Conversion Count', gridcolor='#444'),
         legend=dict(orientation='h', y=-0.2, bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2),
         margin=dict(l=40, r=30, t=50, b=60),
+        height=400,
         autosize=True,
     )
 
@@ -490,6 +491,7 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
             bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2,
         ),
         margin=dict(l=40, r=30, t=50, b=40),
+        height=400,
         autosize=True,
     )
 
@@ -521,6 +523,7 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
             bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2, font=dict(color=COLOR_WHITE),
         ),
         margin=dict(l=30, r=30, t=50, b=40),
+        height=400,
         autosize=True,
     )
 
@@ -543,6 +546,7 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
             bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2, font=dict(color=COLOR_WHITE),
         ),
         margin=dict(l=30, r=30, t=50, b=40),
+        height=400,
         autosize=True,
     )
 
@@ -576,6 +580,7 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
             bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2, font=dict(color=COLOR_WHITE),
         ),
         margin=dict(l=30, r=30, t=50, b=40),
+        height=400,
         autosize=True,
     )
 
@@ -595,6 +600,7 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
             paper_bgcolor=COLOR_BLACK, font=dict(color=COLOR_WHITE),
             title_font=dict(color=COLOR_WHITE, size=16),
             margin=dict(l=30, r=30, t=50, b=40),
+            height=400,
             autosize=True,
         )
     else:
@@ -622,6 +628,7 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
                 bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2, font=dict(color=COLOR_WHITE),
             ),
             margin=dict(l=30, r=30, t=50, b=40),
+            height=400,
             autosize=True,
         )
 
