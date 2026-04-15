@@ -194,78 +194,86 @@ NATIONAL_TARGET_LEVELS = {4, 5}
 app.layout = html.Div([
     navbar_component.render() if navbar_component else html.Div(),
     html.Div(id="global-loading-bar", className="global-loading-bar"),
-
     html.Div(id="main-content", children=[
-        dbc.Row([
-            dbc.Col([
-                dbc.Button("⬇ Download CSV", id="btn-download-csv", color="primary", className="me-2"),
-                dbc.Button("⬇ Download Via Sport CSV", id="btn-download-via-sport-csv", color="success", className="me-2"),
-                dbc.Button("🖨 Download PDF", id="btn-download-pdf", color="secondary"),
-                dcc.Download(id="download-csv"),
-                dcc.Download(id="download-via-sport-csv"),
-                html.Div(id="pdf-dummy", style={"display": "none"}),
-            ], style={"textAlign": "right"}),
-        ], className="mb-3"),
+        dcc.Tabs(id="dashboard-tabs", value="dashboard-tab", children=[
+            dcc.Tab(label="Dashboard", value="dashboard-tab", children=[
+                dbc.Row([
+                    dbc.Col([
+                        dbc.Button("⬇ Download CSV", id="btn-download-csv", color="primary", className="me-2"),
+                        dbc.Button("⬇ Download Via Sport CSV", id="btn-download-via-sport-csv", color="success", className="me-2"),
+                        dbc.Button("🖨 Download PDF", id="btn-download-pdf", color="secondary"),
+                        dcc.Download(id="download-csv"),
+                        dcc.Download(id="download-via-sport-csv"),
+                        html.Div(id="pdf-dummy", style={"display": "none"}),
+                    ], style={"textAlign": "right"}),
+                ], className="mb-3"),
 
-        html.Div(id="pdf-content", children=[
-        # Filters
-        html.Div(id="pdf-filters", children=[
-        dbc.Row([
-            dbc.Col([
-                html.Label("Select Sport(s):"),
-                dcc.Dropdown(
-                    id="sport-dropdown",
-                    options=sport_options,
-                    value=[],
-                    multi=True,
-                    clearable=True,
-                    style={"width": "100%"},
-                )
-            ], xs=12, md=6),
-            dbc.Col([
-                html.Label("Select Years:"),
-                dcc.Dropdown(
-                    id="year-filter",
-                    multi=True,
-                    placeholder="Select one or more years",
-                    style={"width": "100%"},
-                )
-            ], xs=12, md=6),
-        ], className="mb-4"),
+                html.Div(id="pdf-content", children=[
+                html.Div(id="pdf-filters", children=[
+                dbc.Row([
+                    dbc.Col([
+                        html.Label("Select Sport(s):"),
+                        dcc.Dropdown(
+                            id="sport-dropdown",
+                            options=sport_options,
+                            value=[],
+                            multi=True,
+                            clearable=True,
+                            style={"width": "100%"},
+                        )
+                    ], xs=12, md=6),
+                    dbc.Col([
+                        html.Label("Select Years:"),
+                        dcc.Dropdown(
+                            id="year-filter",
+                            multi=True,
+                            placeholder="Select one or more years",
+                            style={"width": "100%"},
+                        )
+                    ], xs=12, md=6),
+                ], className="mb-4"),
 
-        html.Div([
-            dcc.Checklist(
-                id="has-2026-checkbox",
-                options=[{"label": "Only athletes with 2026 as one of their years", "value": "2026"}],
-                value=[],
-                inputStyle={"margin-right": "10px"},
-            )
-        ], style={"marginBottom": "20px"}),
-        ]),  # end pdf-filters
+                html.Div([
+                    dcc.Checklist(
+                        id="has-2026-checkbox",
+                        options=[{"label": "Only athletes with 2026 as one of their years", "value": "2026"}],
+                        value=[],
+                        inputStyle={"margin-right": "10px"},
+                    )
+                ], style={"marginBottom": "20px"}),
+                ]),
 
-        # Charts & tables
-        dcc.Graph(id="time-series-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "500px"}),
-        html.Div(id="conversion-summary"),
-        html.Div(id="via-sport-report", style={"marginBottom": "18px"}),
-        dcc.Graph(id="program-lines-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
-        dcc.Graph(id="program-composition-bar-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
-        dcc.Graph(id="cohort-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
-        dcc.Graph(id="years-targeted-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
-        dcc.Graph(id="program-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
+                dcc.Graph(id="time-series-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "500px"}),
+                html.Div(id="conversion-summary"),
+                html.Div(id="via-sport-report", style={"marginBottom": "18px"}),
+                dcc.Graph(id="program-lines-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
+                dcc.Graph(id="program-composition-bar-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
+                dcc.Graph(id="cohort-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
+                dcc.Graph(id="years-targeted-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
+                dcc.Graph(id="program-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
 
-        html.Div(id="pdf-age-filter", children=[
-            html.Label("Filter Age of Conversion Pie Chart by Program Level:"),
-            dcc.Checklist(
-                id="age-pie-program-filter",
-                options=[{"label": p, "value": p} for p in
-                         ["Prov Dev 3", "Prov Dev 2", "Prov Dev 1", "Uncarded", "SC Carded"]],
-                value=[],
-                inline=True,
-            )
-        ], style={"marginBottom": "15px"}),
+                html.Div(id="pdf-age-filter", children=[
+                    html.Label("Filter Age of Conversion Pie Chart by Program Level:"),
+                    dcc.Checklist(
+                        id="age-pie-program-filter",
+                        options=[{"label": p, "value": p} for p in
+                                 ["Prov Dev 3", "Prov Dev 2", "Prov Dev 1", "Uncarded", "SC Carded"]],
+                        value=[],
+                        inline=True,
+                    )
+                ], style={"marginBottom": "15px"}),
 
-        dcc.Graph(id="age-conversion-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
-        ]),  # end pdf-content
+                dcc.Graph(id="age-conversion-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
+                ]),
+            ]),
+            dcc.Tab(label="All Sports Table", value="all-sports-tab", children=[
+                html.Div([
+                    html.P("Generate the full via sport report across all sports and all data."),
+                    dbc.Button("Generate All Sports Table", id="btn-generate-all-sports-table", color="danger", className="mb-3"),
+                    dcc.Loading(html.Div(id="all-sports-table-output"), type="dot"),
+                ], style={"padding": "16px 0"}),
+            ]),
+        ])
     ], style={"padding": "0 12px", "maxWidth": "1400px", "margin": "0 auto", "overflowX": "hidden"}),
 
     footer_component.render() if footer_component else html.Div(),
@@ -468,7 +476,6 @@ def _build_via_sport_report_df(dff):
             "Sport": _sport_display_name(sport),
             "Conversion in past 4 years": converted_recent_count,
             "Percent of total enrolled converted in past 4 years": round((converted_recent_count / enrolled * 100), 1) if enrolled else None,
-            "Conversion": converted_total,
             "Conversion to national past 4 years": national_recent_count,
             "Conversion to national percentage past 4 years": round((national_recent_count / enrolled * 100), 1) if enrolled else None,
             "Average years targeted": round(float(avg_years_targeted), 2) if pd.notna(avg_years_targeted) else None,
@@ -497,7 +504,6 @@ def _build_via_sport_report(dff):
                         html.Th("Sport"),
                         html.Th("Conversion in past 4 years"),
                         html.Th("Percent of total enrolled converted in past 4 years"),
-                        html.Th("Conversion"),
                         html.Th("Conversion to national past 4 years"),
                         html.Th("Conversion to national % past 4 years"),
                         html.Th("Average years targeted"),
@@ -508,7 +514,6 @@ def _build_via_sport_report(dff):
                         html.Td(row["Sport"]),
                         html.Td(row["Conversion in past 4 years"]),
                         html.Td(f"{row['Percent of total enrolled converted in past 4 years']:.1f}%" if row["Percent of total enrolled converted in past 4 years"] is not None else "—"),
-                        html.Td(row["Conversion"]),
                         html.Td(row["Conversion to national past 4 years"]),
                         html.Td(f"{row['Conversion to national percentage past 4 years']:.1f}%" if row["Conversion to national percentage past 4 years"] is not None else "—"),
                         html.Td(f"{row['Average years targeted']:.2f}" if row["Average years targeted"] is not None else "—"),
@@ -578,6 +583,16 @@ def download_via_sport_csv(n_clicks, selected_sports, filter_2026, selected_year
         return dash.no_update
 
     return dcc.send_data_frame(report_df.to_csv, "via_sport_report.csv", index=False)
+
+
+@app.callback(
+    Output("all-sports-table-output", "children"),
+    Input("btn-generate-all-sports-table", "n_clicks"),
+    prevent_initial_call=True,
+)
+def generate_all_sports_table(n_clicks):
+    report = _build_via_sport_report(df)
+    return report
 
 
 @app.callback(
