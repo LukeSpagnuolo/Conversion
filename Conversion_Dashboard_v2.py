@@ -193,6 +193,7 @@ NATIONAL_TARGET_LEVELS = {"Uncarded", "SC Carded"}
 # ── Layout ────────────────────────────────────────────────────────────────────
 app.layout = html.Div([
     navbar_component.render() if navbar_component else html.Div(),
+    html.Div(id="global-loading-bar", className="global-loading-bar"),
 
     html.Div(id="main-content", children=[
         dbc.Row([
