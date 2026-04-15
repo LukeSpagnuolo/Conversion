@@ -418,9 +418,6 @@ def _build_via_sport_report_df(dff):
         return pd.DataFrame()
 
     report_df = dff.copy()
-    report_df["DOB_parsed"] = pd.to_datetime(report_df["Date of Birth"], errors="coerce")
-    report_df["BirthYear"] = report_df["DOB_parsed"].dt.year
-    report_df["_year_num"] = pd.to_numeric(report_df["Year"], errors="coerce")
     report_df = report_df[report_df["_year_num"].notna()].copy()
 
     if report_df.empty:
@@ -430,58 +427,95 @@ def _build_via_sport_report_df(dff):
     past_four_years_start = latest_year - 3
     past_two_years_start = latest_year - 1
 
-    athlete_rows = []
-    group_cols = ["Sport", "First Name", "Last Name"]
-    for (sport, first_name, last_name), athlete_df in report_df.groupby(group_cols, sort=False):
-        athlete_years = athlete_df["_year_num"].dropna().astype(int)
-        if athlete_years.empty:
-            continue
+    athlete_cols = ["Sport", "First Name", "Last Name"]
 
-        years_targeted = pd.to_numeric(athlete_df["Years Targeted"], errors="coerce").max()
-        converted_any = athlete_df["Convert Year"].astype(str).str.upper().eq("Y").any()
+    # Athlete-level conversion in past 4 years
+    recent_mask = report_df["_year_num"].between(past_four_years_start, latest_year)
+    converted_recent = (
+        report_df[recent_mask]
+        .assign(_conv=report_df.loc[recent_mask, "Convert Year"].astype(str).str.upper().eq("Y"))
+        .groupby(athlete_cols)["_conv"]
+        .any()
+        .rename("Converted Recent")
+    )
 
-        recent_years = athlete_df[athlete_df["_year_num"].between(past_four_years_start, latest_year)]
-        converted_recent = recent_years["Convert Year"].astype(str).str.upper().eq("Y").any()
+    # Athlete-level national conversion in past 4 years:
+    # Build yearly best level and yearly conversion flag, then compare to previous year.
+    yearly = (
+        report_df
+        .groupby(athlete_cols + ["_year_num"], as_index=False)
+        .agg(
+            year_best_level=("_program_level", "max"),
+            convert_year_flag=("Convert Year", lambda s: s.astype(str).str.upper().eq("Y").any()),
+        )
+        .sort_values(athlete_cols + ["_year_num"])
+    )
+    yearly["prev_year"] = yearly.groupby(athlete_cols)["_year_num"].shift(1)
+    yearly["prev_level"] = yearly.groupby(athlete_cols)["year_best_level"].shift(1)
+    yearly["is_national_conversion"] = (
+        yearly["convert_year_flag"]
+        & yearly["year_best_level"].isin(NATIONAL_TARGET_LEVELS)
+        & yearly["prev_level"].isin(NATIONAL_SOURCE_LEVELS)
+        & (yearly["_year_num"] == yearly["prev_year"] + 1)
+    )
+    national_recent = (
+        yearly[yearly["_year_num"].between(past_four_years_start, latest_year)]
+        .groupby(athlete_cols)["is_national_conversion"]
+        .any()
+        .rename("National Recent")
+    )
 
-        national_conversion_year = _athlete_national_conversion_year(athlete_df)
-        national_recent = national_conversion_year is not None and past_four_years_start <= national_conversion_year <= latest_year
-
-        athlete_rows.append({
-            "Sport": sport,
-            "Years Targeted": years_targeted,
-            "Converted Any": converted_any,
-            "Converted Recent": converted_recent,
-            "National Recent": national_recent,
-        })
-
-    athlete_summary = pd.DataFrame(athlete_rows)
+    athlete_summary = (
+        report_df[athlete_cols]
+        .drop_duplicates()
+        .merge(converted_recent.reset_index(), on=athlete_cols, how="left")
+        .merge(national_recent.reset_index(), on=athlete_cols, how="left")
+        .fillna({"Converted Recent": False, "National Recent": False})
+    )
     if athlete_summary.empty:
         return pd.DataFrame()
 
-    report_rows = []
-    selected_report_sports = sorted(athlete_summary["Sport"].dropna().unique(), key=lambda sport: _sport_display_name(sport))
-    for sport in selected_report_sports:
-        sport_df = athlete_summary[athlete_summary["Sport"] == sport].copy()
-        enrolled = len(sport_df)
-        converted_recent_count = int(sport_df["Converted Recent"].sum())
-        converted_total = int(sport_df["Converted Any"].sum())
-        national_recent_count = int(sport_df["National Recent"].sum())
-        recent_two_years_df = report_df[
-            (report_df["Sport"] == sport)
-            & (report_df["_year_num"].between(past_two_years_start, latest_year))
+    sport_rollup = (
+        athlete_summary
+        .groupby("Sport", as_index=False)
+        .agg(
+            enrolled=("Sport", "size"),
+            converted_recent_count=("Converted Recent", "sum"),
+            national_recent_count=("National Recent", "sum"),
+        )
+    )
+
+    avg_two_years = (
+        report_df[report_df["_year_num"].between(past_two_years_start, latest_year)]
+        .assign(_years_targeted=pd.to_numeric(report_df.loc[report_df["_year_num"].between(past_two_years_start, latest_year), "Years Targeted"], errors="coerce"))
+        .groupby("Sport", as_index=False)["_years_targeted"]
+        .mean()
+        .rename(columns={"_years_targeted": "avg_years_targeted"})
+    )
+
+    report_output = sport_rollup.merge(avg_two_years, on="Sport", how="left")
+    report_output["Sport"] = report_output["Sport"].map(_sport_display_name)
+    report_output["Conversion in past 4 years"] = report_output["converted_recent_count"].astype(int)
+    report_output["Percent of total enrolled converted in past 4 years"] = (
+        report_output["converted_recent_count"] / report_output["enrolled"] * 100
+    ).round(1)
+    report_output["Conversion to national past 4 years"] = report_output["national_recent_count"].astype(int)
+    report_output["Conversion to national percentage past 4 years"] = (
+        report_output["national_recent_count"] / report_output["enrolled"] * 100
+    ).round(1)
+    report_output["Average years targeted"] = report_output["avg_years_targeted"].round(2)
+
+    report_output = report_output[
+        [
+            "Sport",
+            "Conversion in past 4 years",
+            "Percent of total enrolled converted in past 4 years",
+            "Conversion to national past 4 years",
+            "Conversion to national percentage past 4 years",
+            "Average years targeted",
         ]
-        avg_years_targeted = pd.to_numeric(recent_two_years_df["Years Targeted"], errors="coerce").mean()
+    ].sort_values("Sport").reset_index(drop=True)
 
-        report_rows.append({
-            "Sport": _sport_display_name(sport),
-            "Conversion in past 4 years": converted_recent_count,
-            "Percent of total enrolled converted in past 4 years": round((converted_recent_count / enrolled * 100), 1) if enrolled else None,
-            "Conversion to national past 4 years": national_recent_count,
-            "Conversion to national percentage past 4 years": round((national_recent_count / enrolled * 100), 1) if enrolled else None,
-            "Average years targeted": round(float(avg_years_targeted), 2) if pd.notna(avg_years_targeted) else None,
-        })
-
-    report_output = pd.DataFrame(report_rows)
     report_output.attrs["latest_year"] = latest_year
     return report_output
 
