@@ -194,6 +194,7 @@ NATIONAL_TARGET_LEVELS = {4, 5}
 app.layout = html.Div([
     navbar_component.render() if navbar_component else html.Div(),
     html.Div(id="global-loading-bar", className="global-loading-bar"),
+    dcc.Download(id="download-via-sport-csv"),
     html.Div(id="main-content", children=[
         dcc.Tabs(id="dashboard-tabs", value="dashboard-tab", children=[
             dcc.Tab(label="Dashboard", value="dashboard-tab", children=[
@@ -202,7 +203,6 @@ app.layout = html.Div([
                         dbc.Button("⬇ Download CSV", id="btn-download-csv", color="primary", className="me-2"),
                         dbc.Button("🖨 Download PDF", id="btn-download-pdf", color="secondary"),
                         dcc.Download(id="download-csv"),
-                        dcc.Download(id="download-via-sport-csv"),
                         html.Div(id="pdf-dummy", style={"display": "none"}),
                     ], style={"textAlign": "right"}),
                 ], className="mb-3"),
