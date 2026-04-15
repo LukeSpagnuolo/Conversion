@@ -133,6 +133,52 @@ VIBRANT_PALETTE = [
     "#FF00FF",  # Bright Magenta
 ]
 
+VIA_SPORT_REPORT_ORDER = [
+    "Alpine Skiing",
+    "Artistic Swimming",
+    "Athletics",
+    "Basketball",
+    "Biathlon",
+    "Canoe Kayak",
+    "Cross Country Skiing",
+    "Curling",
+    "Cycling",
+    "Field Hockey",
+    "Figure Skating",
+    "Freestyle Skiing",
+    "Wrestling",
+    "Rugby",
+    "Sailing",
+    "Snowboard",
+    "Swimming",
+    "Triathlon",
+    "Volleyball",
+    "Wheelchair Basketball",
+    "Artistic Gymnastics",
+    "Judo",
+    "Wheelchair Athletics",
+    "Wheelchair Rugby",
+    "Wheelchair Tennis",
+    "Diving",
+    "Rowing",
+]
+
+REPORT_SPORT_LABELS = {
+    "Canoe Kayak": "Canoe/Kayak",
+    "Artistic Gymnastics": "Gymnastics",
+}
+
+PROGRAM_LEVELS = {
+    "Prov Dev 3": 1,
+    "Prov Dev 2": 2,
+    "Prov Dev 1": 3,
+    "Uncarded": 4,
+    "SC Carded": 5,
+}
+
+NATIONAL_SOURCE_LEVELS = {"Prov Dev 3", "Prov Dev 2", "Prov Dev 1"}
+NATIONAL_TARGET_LEVELS = {"Uncarded", "SC Carded"}
+
 # ── Layout ────────────────────────────────────────────────────────────────────
 app.layout = html.Div([
     navbar_component.render() if navbar_component else html.Div(),
@@ -186,6 +232,7 @@ app.layout = html.Div([
         # Charts & tables
         dcc.Graph(id="time-series-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "500px"}),
         html.Div(id="conversion-summary"),
+        html.Div(id="via-sport-report", style={"marginBottom": "18px"}),
         dcc.Graph(id="program-lines-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
         dcc.Graph(id="program-composition-bar-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
         dcc.Graph(id="cohort-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
@@ -220,6 +267,7 @@ app.clientside_callback(
         var ids = [
             'pdf-filters',
             'conversion-summary',
+            'via-sport-report',
             'time-series-graph',
             'program-lines-graph',
             'program-composition-bar-chart',
@@ -283,6 +331,138 @@ def _sports_label(selected_sports):
     return f"{len(selected_sports)} sports"
 
 
+def _sport_display_name(sport_name):
+    return REPORT_SPORT_LABELS.get(sport_name, sport_name)
+
+
+def _athlete_national_conversion_year(athlete_df):
+    sorted_df = athlete_df.sort_values(["_year_num", "Program"])
+    previous_level = None
+    for _, row in sorted_df.iterrows():
+        current_program = str(row.get("Program", "")).strip()
+        current_level = PROGRAM_LEVELS.get(current_program)
+        if previous_level in NATIONAL_SOURCE_LEVELS and current_level in NATIONAL_TARGET_LEVELS:
+            return int(row["_year_num"])
+        previous_level = current_level
+    return None
+
+
+def _build_via_sport_report(dff):
+    if dff.empty:
+        return html.Div("No sport report data for the current filters.", style={"padding": "8px"})
+
+    report_df = dff.copy()
+    report_df["DOB_parsed"] = pd.to_datetime(report_df["Date of Birth"], errors="coerce")
+    report_df["BirthYear"] = report_df["DOB_parsed"].dt.year
+    report_df["_year_num"] = pd.to_numeric(report_df["Year"], errors="coerce")
+    report_df = report_df[report_df["_year_num"].notna()].copy()
+
+    if report_df.empty:
+        return html.Div("No sport report data for the current filters.", style={"padding": "8px"})
+
+    latest_year = int(report_df["_year_num"].max())
+    past_four_years_start = latest_year - 3
+
+    athlete_rows = []
+    group_cols = ["Sport", "First Name", "Last Name"]
+    for (sport, first_name, last_name), athlete_df in report_df.groupby(group_cols, sort=False):
+        athlete_years = athlete_df["_year_num"].dropna().astype(int)
+        if athlete_years.empty:
+            continue
+
+        birth_year = athlete_df["BirthYear"].dropna().iloc[0] if athlete_df["BirthYear"].notna().any() else None
+        gender_series = athlete_df["Gender"].dropna().astype(str).str.strip()
+        gender = gender_series.iloc[0] if not gender_series.empty else ""
+        years_targeted = pd.to_numeric(athlete_df["Years Targeted"], errors="coerce").max()
+        converted_any = athlete_df["Convert Year"].astype(str).str.upper().eq("Y").any()
+
+        recent_years = athlete_df[athlete_df["_year_num"].between(past_four_years_start, latest_year)]
+        converted_recent = recent_years["Convert Year"].astype(str).str.upper().eq("Y").any()
+
+        national_conversion_year = _athlete_national_conversion_year(athlete_df)
+        national_recent = national_conversion_year is not None and past_four_years_start <= national_conversion_year <= latest_year
+
+        age_value = float("nan")
+        if birth_year is not None:
+            age_value = int(athlete_years.max()) - int(birth_year)
+
+        athlete_rows.append({
+            "Sport": sport,
+            "Gender": gender,
+            "Age": age_value,
+            "Years Targeted": years_targeted,
+            "Converted Any": converted_any,
+            "Converted Recent": converted_recent,
+            "National Recent": national_recent,
+        })
+
+    athlete_summary = pd.DataFrame(athlete_rows)
+    if athlete_summary.empty:
+        return html.Div("No sport report data for the current filters.", style={"padding": "8px"})
+
+    report_rows = []
+    selected_report_sports = [sport for sport in VIA_SPORT_REPORT_ORDER if sport in athlete_summary["Sport"].unique()]
+    for sport in selected_report_sports:
+        sport_df = athlete_summary[athlete_summary["Sport"] == sport].copy()
+        enrolled = len(sport_df)
+        converted_recent_count = int(sport_df["Converted Recent"].sum())
+        converted_total = int(sport_df["Converted Any"].sum())
+        national_recent_count = int(sport_df["National Recent"].sum())
+        avg_years_targeted = sport_df["Years Targeted"].dropna().astype(float).mean()
+        avg_age = sport_df["Age"].dropna().astype(float).mean()
+        gender_counts = sport_df["Gender"].replace({"nan": ""}).value_counts()
+        gender_text = f"{int(gender_counts.get('F', 0))}/{int(gender_counts.get('M', 0))}/{int(gender_counts.get('X', 0))}"
+
+        report_rows.append(html.Tr([
+            html.Td(_sport_display_name(sport)),
+            html.Td(f"{converted_recent_count}"),
+            html.Td(f"{(converted_recent_count / enrolled * 100):.1f}%" if enrolled else "—"),
+            html.Td(f"{converted_total}"),
+            html.Td(f"{national_recent_count}"),
+            html.Td(f"{(national_recent_count / enrolled * 100):.1f}%" if enrolled else "—"),
+            html.Td(f"{avg_years_targeted:.2f}" if pd.notna(avg_years_targeted) else "—"),
+            html.Td(f"{avg_age:.1f}" if pd.notna(avg_age) else "—"),
+            html.Td(gender_text),
+        ]))
+
+    if not report_rows:
+        return html.Div("No selected sports match the via sport report list.", style={"padding": "8px"})
+
+    report_table = html.Div(
+        html.Table(
+            [
+                html.Thead([
+                    html.Tr([
+                        html.Th("Sport"),
+                        html.Th("Conversion in past 4 years"),
+                        html.Th("Percent of total enrolled converted in past 4 years"),
+                        html.Th("Conversion"),
+                        html.Th("Conversion to national past 4 years"),
+                        html.Th("Conversion to national % past 4 years"),
+                        html.Th("Average years targeted"),
+                        html.Th("Average age"),
+                        html.Th("Gender (F/M/X)"),
+                    ])
+                ]),
+                html.Tbody(report_rows),
+            ],
+            className="conversion-summary-table",
+        ),
+        style={"overflowX": "auto"},
+    )
+
+    caption = html.Div(
+        f"Past 4 years are calculated from the latest year in the current filtered view ({latest_year}).",
+        style={"padding": "0 8px 8px 8px", "fontSize": "0.9rem", "opacity": 0.85},
+    )
+
+    return html.Div([
+        html.H3("Via Sport Report", style={"margin": "8px 0 6px 0"}),
+        caption,
+        report_table,
+    ])
+
+
 # ── Callbacks ─────────────────────────────────────────────────────────────────
 @app.callback(
     Output("download-csv", "data"),
@@ -322,6 +502,7 @@ def update_year_dropdown(selected_sports):
 @app.callback(
     Output("time-series-graph", "figure"),
     Output("conversion-summary", "children"),
+    Output("via-sport-report", "children"),
     Output("program-lines-graph", "figure"),
     Output("program-composition-bar-chart", "figure"),
     Output("cohort-pie-chart", "figure"),
@@ -337,7 +518,7 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
     if not selected_sports:
         empty = go.Figure()
         msg   = html.Div("No sport(s) selected.", style={"padding": "8px"})
-        return empty, msg, empty, empty, empty, empty, empty, empty
+        return empty, msg, html.Div(), empty, empty, empty, empty, empty, empty
 
     dff = df[df['Sport'].isin(selected_sports)].copy()
 
@@ -353,6 +534,8 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
 
     dff['DOB_parsed'] = pd.to_datetime(dff['Date of Birth'], errors='coerce')
     dff['BirthYear']  = dff['DOB_parsed'].dt.year
+
+    via_sport_report = _build_via_sport_report(dff)
 
     # ── Time-series metrics ───────────────────────────────────────────────────
     grp = dff.groupby('Year', sort=True)
@@ -734,7 +917,7 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
             autosize=True,
         )
 
-    return (fig_ts, summary_table, fig_program_lines, fig_bar,
+        return (fig_ts, summary_table, via_sport_report, fig_program_lines, fig_bar,
             fig_pie, fig_disp, fig_prog, fig_age_pie)
 
 
