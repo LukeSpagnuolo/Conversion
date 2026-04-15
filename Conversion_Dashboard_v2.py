@@ -115,6 +115,17 @@ server = auth.server
 # ── Data ─────────────────────────────────────────────────────────────────────
 DF_PATH  = BASE_DIR / "Conversion_Data_2026_final.csv"
 df = pd.read_csv(DF_PATH)
+df["_year_num"] = pd.to_numeric(df["Year"], errors="coerce")
+df["DOB_parsed"] = pd.to_datetime(df["Date of Birth"], errors="coerce")
+df["BirthYear"] = df["DOB_parsed"].dt.year
+df["Full_Name"] = df["First Name"].astype(str).str.strip() + " " + df["Last Name"].astype(str).str.strip()
+df["_program_level"] = df["Program"].astype(str).str.strip().map({
+    "Prov Dev 3": 1,
+    "Prov Dev 2": 2,
+    "Prov Dev 1": 3,
+    "Uncarded": 4,
+    "SC Carded": 5,
+})
 
 sports        = df['Sport'].sort_values().unique()
 sport_options = [{"label": s, "value": s} for s in sports]
@@ -183,7 +194,7 @@ NATIONAL_TARGET_LEVELS = {"Uncarded", "SC Carded"}
 app.layout = html.Div([
     navbar_component.render() if navbar_component else html.Div(),
 
-    html.Div(id="main-content", children=[
+    dcc.Loading(html.Div(id="main-content", children=[
         dbc.Row([
             dbc.Col([
                 dbc.Button("⬇ Download CSV", id="btn-download-csv", color="primary", className="me-2"),
@@ -254,7 +265,7 @@ app.layout = html.Div([
 
         dcc.Graph(id="age-conversion-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
         ]),  # end pdf-content
-    ], style={"padding": "0 12px", "maxWidth": "1400px", "margin": "0 auto", "overflowX": "hidden"}),
+    ], style={"padding": "0 12px", "maxWidth": "1400px", "margin": "0 auto", "overflowX": "hidden"}), type="dot"),
 
     footer_component.render() if footer_component else html.Div(),
 ], style={"paddingBottom": "90px"})
@@ -337,6 +348,20 @@ def _sport_display_name(sport_name):
     return REPORT_SPORT_LABELS.get(sport_name, sport_name)
 
 
+def _filter_dashboard_df(selected_sports, filter_2026, selected_years):
+    dff = df[df['Sport'].isin(selected_sports)].copy()
+
+    if filter_2026 and "2026" in filter_2026:
+        key_cols = ['First Name', 'Last Name', 'Sport']
+        has_2026 = dff.groupby(key_cols)['_year_num'].transform(lambda s: s.eq(2026).any())
+        dff = dff[has_2026].copy()
+
+    if selected_years:
+        dff = dff[dff['Year'].isin(selected_years)]
+
+    return dff
+
+
 def _athlete_national_conversion_year(athlete_df):
     sorted_df = athlete_df.copy()
     sorted_df["_program_level"] = sorted_df["Program"].astype(str).str.strip().map(PROGRAM_LEVELS)
@@ -387,9 +412,6 @@ def _build_via_sport_report_df(dff):
         if athlete_years.empty:
             continue
 
-        birth_year = athlete_df["BirthYear"].dropna().iloc[0] if athlete_df["BirthYear"].notna().any() else None
-        gender_series = athlete_df["Gender"].dropna().astype(str).str.strip()
-        gender = gender_series.iloc[0] if not gender_series.empty else ""
         years_targeted = pd.to_numeric(athlete_df["Years Targeted"], errors="coerce").max()
         converted_any = athlete_df["Convert Year"].astype(str).str.upper().eq("Y").any()
 
@@ -398,10 +420,6 @@ def _build_via_sport_report_df(dff):
 
         national_conversion_year = _athlete_national_conversion_year(athlete_df)
         national_recent = national_conversion_year is not None and past_four_years_start <= national_conversion_year <= latest_year
-
-        age_value = float("nan")
-        if birth_year is not None:
-            age_value = int(athlete_years.max()) - int(birth_year)
 
         athlete_rows.append({
             "Sport": sport,
@@ -466,8 +484,6 @@ def _build_via_sport_report(dff):
                         html.Th("Conversion to national past 4 years"),
                         html.Th("Conversion to national % past 4 years"),
                         html.Th("Average years targeted"),
-                        html.Th("Average age"),
-                        html.Th("Gender (F/M/X)"),
                     ])
                 ]),
                 html.Tbody([
@@ -479,8 +495,6 @@ def _build_via_sport_report(dff):
                         html.Td(row["Conversion to national past 4 years"]),
                         html.Td(f"{row['Conversion to national percentage past 4 years']:.1f}%" if row["Conversion to national percentage past 4 years"] is not None else "—"),
                         html.Td(f"{row['Average years targeted']:.2f}" if row["Average years targeted"] is not None else "—"),
-                        html.Td(f"{row['Average age']:.1f}" if row["Average age"] is not None else "—"),
-                        html.Td(row["Gender numbers (F/M/X)"]),
                     ])
                     for _, row in report_df.iterrows()
                 ]),
@@ -524,14 +538,7 @@ def _via_sport_report_csv(dff):
 def download_filtered_csv(n_clicks, selected_sports, filter_2026, selected_years):
     if not selected_sports:
         return dash.no_update
-    dff = df[df['Sport'].isin(selected_sports)].copy()
-    if filter_2026 and "2026" in filter_2026:
-        key_cols = ['First Name', 'Last Name', 'Sport']
-        dff['_year_num'] = pd.to_numeric(dff['Year'], errors='coerce')
-        has_2026 = dff.groupby(key_cols)['_year_num'].transform(lambda s: s.eq(2026).any())
-        dff = dff[has_2026].drop(columns=['_year_num']).copy()
-    if selected_years:
-        dff = dff[dff['Year'].isin(selected_years)]
+    dff = _filter_dashboard_df(selected_sports, filter_2026, selected_years)
     return dcc.send_data_frame(dff.to_csv, "conversion_data_filtered.csv", index=False)
 
 
@@ -547,16 +554,7 @@ def download_via_sport_csv(n_clicks, selected_sports, filter_2026, selected_year
     if not selected_sports:
         return dash.no_update
 
-    dff = df[df['Sport'].isin(selected_sports)].copy()
-
-    if filter_2026 and "2026" in filter_2026:
-        key_cols = ['First Name', 'Last Name', 'Sport']
-        dff['_year_num'] = pd.to_numeric(dff['Year'], errors='coerce')
-        has_2026 = dff.groupby(key_cols)['_year_num'].transform(lambda s: s.eq(2026).any())
-        dff = dff[has_2026].drop(columns=['_year_num']).copy()
-
-    if selected_years:
-        dff = dff[dff['Year'].isin(selected_years)]
+    dff = _filter_dashboard_df(selected_sports, filter_2026, selected_years)
 
     report_df = _via_sport_report_csv(dff)
     if report_df is None or report_df.empty:
@@ -599,29 +597,14 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
         msg   = html.Div("No sport(s) selected.", style={"padding": "8px"})
         return empty, msg, html.Div(), empty, empty, empty, empty, empty, empty
 
-    dff = df[df['Sport'].isin(selected_sports)].copy()
-
-    if "2026" in filter_2026:
-        key_cols = ['First Name', 'Last Name', 'Sport']
-        dff_year = dff.copy()
-        dff_year['_year_num'] = pd.to_numeric(dff_year['Year'], errors='coerce')
-        has_2026 = dff_year.groupby(key_cols)['_year_num'].transform(lambda s: s.eq(2026).any())
-        dff = dff_year[has_2026].drop(columns=['_year_num']).copy()
-
-    if selected_years:
-        dff = dff[dff['Year'].isin(selected_years)]
-
-    dff['DOB_parsed'] = pd.to_datetime(dff['Date of Birth'], errors='coerce')
-    dff['BirthYear']  = dff['DOB_parsed'].dt.year
+    dff = _filter_dashboard_df(selected_sports, filter_2026, selected_years)
 
     via_sport_report = _build_via_sport_report(dff)
 
     # ── Time-series metrics ───────────────────────────────────────────────────
     grp = dff.groupby('Year', sort=True)
 
-    unique_athletes  = grp.apply(
-        lambda g: g[['First Name', 'Last Name']].drop_duplicates().shape[0]
-    ).sort_index()
+    unique_athletes  = dff.drop_duplicates(['Year', 'First Name', 'Last Name']).groupby('Year').size().sort_index()
     converted        = grp['Convert Year'].apply(lambda col: col.eq('Y').sum()).sort_index()
     avg_targeted     = grp['Years Targeted'].mean().sort_index()
     conversion_rate  = (converted / unique_athletes * 100).fillna(0)
