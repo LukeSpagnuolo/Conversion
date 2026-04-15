@@ -194,7 +194,7 @@ NATIONAL_TARGET_LEVELS = {"Uncarded", "SC Carded"}
 app.layout = html.Div([
     navbar_component.render() if navbar_component else html.Div(),
 
-    dcc.Loading(html.Div(id="main-content", children=[
+    html.Div(id="main-content", children=[
         dbc.Row([
             dbc.Col([
                 dbc.Button("⬇ Download CSV", id="btn-download-csv", color="primary", className="me-2"),
@@ -265,7 +265,7 @@ app.layout = html.Div([
 
         dcc.Graph(id="age-conversion-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
         ]),  # end pdf-content
-    ], style={"padding": "0 12px", "maxWidth": "1400px", "margin": "0 auto", "overflowX": "hidden"}), type="dot"),
+    ], style={"padding": "0 12px", "maxWidth": "1400px", "margin": "0 auto", "overflowX": "hidden"}),
 
     footer_component.render() if footer_component else html.Div(),
 ], style={"paddingBottom": "90px"})
