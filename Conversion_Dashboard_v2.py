@@ -187,8 +187,8 @@ PROGRAM_LEVELS = {
     "SC Carded": 5,
 }
 
-NATIONAL_SOURCE_LEVELS = {"Prov Dev 3", "Prov Dev 2", "Prov Dev 1"}
-NATIONAL_TARGET_LEVELS = {"Uncarded", "SC Carded"}
+NATIONAL_SOURCE_LEVELS = {1, 2, 3}
+NATIONAL_TARGET_LEVELS = {4, 5}
 
 # ── Layout ────────────────────────────────────────────────────────────────────
 app.layout = html.Div([
@@ -364,28 +364,44 @@ def _filter_dashboard_df(selected_sports, filter_2026, selected_years):
 
 
 def _athlete_national_conversion_year(athlete_df):
-    sorted_df = athlete_df.copy()
-    sorted_df["_program_level"] = sorted_df["Program"].astype(str).str.strip().map(PROGRAM_LEVELS)
-    sorted_df = sorted_df.sort_values(["_year_num", "_program_level"], kind="stable")
-    previous_row = None
-    for _, row in sorted_df.iterrows():
-        current_year = row.get("_year_num")
-        current_level = row.get("_program_level")
-        if pd.isna(current_year) or pd.isna(current_level):
-            continue
+    if athlete_df.empty:
+        return None
 
-        if previous_row is not None:
-            previous_year = previous_row.get("_year_num")
-            previous_level = previous_row.get("_program_level")
-            if (
-                pd.notna(previous_year)
-                and int(current_year) == int(previous_year) + 1
-                and previous_level in NATIONAL_SOURCE_LEVELS
-                and current_level in NATIONAL_TARGET_LEVELS
-            ):
-                return int(current_year)
+    working = athlete_df.copy()
+    working = working[working["_year_num"].notna()].copy()
+    if working.empty:
+        return None
 
-        previous_row = row
+    # Per year, keep:
+    # - the highest program level reached in that year
+    # - whether that year is flagged as a conversion year at national level (4/5)
+    by_year = (
+        working
+        .groupby("_year_num", as_index=False)
+        .agg(
+            year_best_level=("_program_level", "max"),
+            national_conversion_year=("Convert Year", lambda s: s.astype(str).str.upper().eq("Y").any()),
+        )
+        .sort_values("_year_num")
+    )
+
+    # Keep only years where conversion happened and year level is national (4/5)
+    national_candidates = by_year[
+        by_year["national_conversion_year"]
+        & by_year["year_best_level"].isin(NATIONAL_TARGET_LEVELS)
+    ]
+
+    if national_candidates.empty:
+        return None
+
+    year_to_level = dict(zip(by_year["_year_num"].astype(int), by_year["year_best_level"]))
+
+    for _, row in national_candidates.iterrows():
+        year = int(row["_year_num"])
+        previous_level = year_to_level.get(year - 1)
+        if previous_level in NATIONAL_SOURCE_LEVELS:
+            return year
+
     return None
 
 
