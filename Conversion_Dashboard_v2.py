@@ -341,23 +341,25 @@ def _athlete_national_conversion_year(athlete_df):
     sorted_df = athlete_df.copy()
     sorted_df["_program_level"] = sorted_df["Program"].astype(str).str.strip().map(PROGRAM_LEVELS)
     sorted_df = sorted_df.sort_values(["_year_num", "_program_level"], kind="stable")
-    previous_level = None
-    previous_year = None
+    previous_row = None
     for _, row in sorted_df.iterrows():
         current_year = row.get("_year_num")
-        if pd.isna(current_year):
+        current_level = row.get("_program_level")
+        if pd.isna(current_year) or pd.isna(current_level):
             continue
-        current_program = str(row.get("Program", "")).strip()
-        current_level = PROGRAM_LEVELS.get(current_program)
-        if (
-            previous_level in NATIONAL_SOURCE_LEVELS
-            and current_level in NATIONAL_TARGET_LEVELS
-            and previous_year is not None
-            and int(current_year) > int(previous_year)
-        ):
-            return int(current_year)
-        previous_level = current_level
-        previous_year = current_year
+
+        if previous_row is not None:
+            previous_year = previous_row.get("_year_num")
+            previous_level = previous_row.get("_program_level")
+            if (
+                pd.notna(previous_year)
+                and int(current_year) == int(previous_year) + 1
+                and previous_level in NATIONAL_SOURCE_LEVELS
+                and current_level in NATIONAL_TARGET_LEVELS
+            ):
+                return int(current_year)
+
+        previous_row = row
     return None
 
 
@@ -376,6 +378,7 @@ def _build_via_sport_report_df(dff):
 
     latest_year = int(report_df["_year_num"].max())
     past_four_years_start = latest_year - 3
+    past_two_years_start = latest_year - 1
 
     athlete_rows = []
     group_cols = ["Sport", "First Name", "Last Name"]
@@ -402,8 +405,6 @@ def _build_via_sport_report_df(dff):
 
         athlete_rows.append({
             "Sport": sport,
-            "Gender": gender,
-            "Age": age_value,
             "Years Targeted": years_targeted,
             "Converted Any": converted_any,
             "Converted Recent": converted_recent,
@@ -415,29 +416,27 @@ def _build_via_sport_report_df(dff):
         return pd.DataFrame()
 
     report_rows = []
-    selected_report_sports = [sport for sport in VIA_SPORT_REPORT_ORDER if sport in athlete_summary["Sport"].unique()]
+    selected_report_sports = sorted(athlete_summary["Sport"].dropna().unique(), key=lambda sport: _sport_display_name(sport))
     for sport in selected_report_sports:
         sport_df = athlete_summary[athlete_summary["Sport"] == sport].copy()
         enrolled = len(sport_df)
         converted_recent_count = int(sport_df["Converted Recent"].sum())
         converted_total = int(sport_df["Converted Any"].sum())
         national_recent_count = int(sport_df["National Recent"].sum())
-        avg_years_targeted = sport_df["Years Targeted"].dropna().astype(float).mean()
-        avg_age = sport_df["Age"].dropna().astype(float).mean()
-        gender_counts = sport_df["Gender"].replace({"nan": ""}).value_counts()
-        gender_text = f"{int(gender_counts.get('F', 0))}/{int(gender_counts.get('M', 0))}/{int(gender_counts.get('X', 0))}"
+        recent_two_years_df = report_df[
+            (report_df["Sport"] == sport)
+            & (report_df["_year_num"].between(past_two_years_start, latest_year))
+        ]
+        avg_years_targeted = pd.to_numeric(recent_two_years_df["Years Targeted"], errors="coerce").mean()
 
         report_rows.append({
             "Sport": _sport_display_name(sport),
-            "Total athlete count in cohort": enrolled,
             "Conversion in past 4 years": converted_recent_count,
             "Percent of total enrolled converted in past 4 years": round((converted_recent_count / enrolled * 100), 1) if enrolled else None,
             "Conversion": converted_total,
             "Conversion to national past 4 years": national_recent_count,
             "Conversion to national percentage past 4 years": round((national_recent_count / enrolled * 100), 1) if enrolled else None,
             "Average years targeted": round(float(avg_years_targeted), 2) if pd.notna(avg_years_targeted) else None,
-            "Average age": round(float(avg_age), 1) if pd.notna(avg_age) else None,
-            "Gender numbers (F/M/X)": gender_text,
         })
 
     report_output = pd.DataFrame(report_rows)
@@ -461,7 +460,6 @@ def _build_via_sport_report(dff):
                 html.Thead([
                     html.Tr([
                         html.Th("Sport"),
-                        html.Th("Total athlete count in cohort"),
                         html.Th("Conversion in past 4 years"),
                         html.Th("Percent of total enrolled converted in past 4 years"),
                         html.Th("Conversion"),
@@ -475,7 +473,6 @@ def _build_via_sport_report(dff):
                 html.Tbody([
                     html.Tr([
                         html.Td(row["Sport"]),
-                        html.Td(row["Total athlete count in cohort"]),
                         html.Td(row["Conversion in past 4 years"]),
                         html.Td(f"{row['Percent of total enrolled converted in past 4 years']:.1f}%" if row["Percent of total enrolled converted in past 4 years"] is not None else "—"),
                         html.Td(row["Conversion"]),
@@ -494,7 +491,10 @@ def _build_via_sport_report(dff):
     )
 
     caption = html.Div(
-        f"Past 4 years are calculated from the latest year in the current filtered view ({latest_year})." if latest_year is not None else "Past 4 years are calculated from the current filtered view.",
+        (
+            f"Past 4 years are calculated from the latest year in the current filtered view ({latest_year}); "
+            f"average years targeted uses only the latest 2 years."
+        ) if latest_year is not None else "Past 4 years are calculated from the current filtered view; average years targeted uses only the latest 2 years.",
         style={"padding": "0 8px 8px 8px", "fontSize": "0.9rem", "opacity": 0.85},
     )
 
