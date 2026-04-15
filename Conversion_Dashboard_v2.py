@@ -200,7 +200,6 @@ app.layout = html.Div([
                 dbc.Row([
                     dbc.Col([
                         dbc.Button("⬇ Download CSV", id="btn-download-csv", color="primary", className="me-2"),
-                        dbc.Button("⬇ Download Via Sport CSV", id="btn-download-via-sport-csv", color="success", className="me-2"),
                         dbc.Button("🖨 Download PDF", id="btn-download-pdf", color="secondary"),
                         dcc.Download(id="download-csv"),
                         dcc.Download(id="download-via-sport-csv"),
@@ -269,7 +268,8 @@ app.layout = html.Div([
             dcc.Tab(label="All Sports Table", value="all-sports-tab", children=[
                 html.Div([
                     html.P("Generate the full via sport report across all sports and all data."),
-                    dbc.Button("Generate All Sports Table", id="btn-generate-all-sports-table", color="danger", className="mb-3"),
+                    dbc.Button("Generate All Sports Table", id="btn-generate-all-sports-table", color="danger", className="me-2 mb-3"),
+                    dbc.Button("⬇ Download Via Sport CSV", id="btn-download-via-sport-csv", color="success", className="mb-3"),
                     dcc.Loading(html.Div(id="all-sports-table-output"), type="dot"),
                 ], style={"padding": "16px 0"}),
             ]),
@@ -601,22 +601,14 @@ def download_filtered_csv(n_clicks, selected_sports, filter_2026, selected_years
 @app.callback(
     Output("download-via-sport-csv", "data"),
     Input("btn-download-via-sport-csv", "n_clicks"),
-    State("sport-dropdown", "value"),
-    State("has-2026-checkbox", "value"),
-    State("year-filter", "value"),
     prevent_initial_call=True,
 )
-def download_via_sport_csv(n_clicks, selected_sports, filter_2026, selected_years):
-    if not selected_sports:
-        return dash.no_update
-
-    dff = _filter_dashboard_df(selected_sports, filter_2026, selected_years)
-
-    report_df = _via_sport_report_csv(dff)
+def download_via_sport_csv(n_clicks):
+    report_df = _via_sport_report_csv(df)
     if report_df is None or report_df.empty:
         return dash.no_update
 
-    return dcc.send_data_frame(report_df.to_csv, "via_sport_report.csv", index=False)
+    return dcc.send_data_frame(report_df.to_csv, "via_sport_report_all_sports.csv", index=False)
 
 
 @app.callback(
