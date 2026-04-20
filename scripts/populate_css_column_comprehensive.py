@@ -7,6 +7,8 @@ Comprehensive CSS column population:
 """
 
 import pandas as pd
+import re
+import unicodedata
 from pathlib import Path
 
 BASE_DIR = Path("/workspaces/Conversion")
@@ -21,10 +23,20 @@ print()
 # ============================================================================
 print("Loading datasets...")
 css_long = pd.read_csv(BASE_DIR / "CSSAthleteConversion_long.csv")
-conversion_2026 = pd.read_csv(BASE_DIR / "Conversion_Data_2026.csv")
-nomination_master = pd.read_csv(BASE_DIR / "Nomination_Master_2025only(26 FY (Mar 31- Mar 31)).csv", encoding='ISO-8859-1')
+conversion_2026 = pd.read_csv(BASE_DIR / "scripts/data/Conversion_Data_2026_consolidated.csv")
+nomination_master = pd.read_csv(BASE_DIR / "scripts/data/Nomination_Master_2025only(26 FY (Mar 31- Mar 31)).csv", encoding='ISO-8859-1')
 
 css_yes = css_long[css_long['Class'] == 'YES'].copy()
+
+
+def normalize_name(value):
+    text = '' if pd.isna(value) else str(value)
+    text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
+    return re.sub(r'[^a-z0-9]+', '', text.lower())
+
+
+def build_name_key(first_name, last_name):
+    return normalize_name(f"{first_name} {last_name}")
 
 print(f"  CSS dataset: {len(css_long)} rows (with Class='YES': {len(css_yes)})")
 print(f"  Conversion data: {len(conversion_2026)} rows")
@@ -44,8 +56,8 @@ for _, row in css_yes.iterrows():
     first = row['First Name'].strip()
     last = row['Last Name'].strip()
     year = int(row['Year'])
-    css_keys.add((first, last, year))
-    css_athletes.add((first, last))
+    css_keys.add((build_name_key(first, last), year))
+    css_athletes.add(build_name_key(first, last))
 
 print(f"  CSS lookup: {len(css_keys)} unique (athlete, year) combinations")
 print(f"  Unique CSS athletes: {len(css_athletes)}")
@@ -58,7 +70,7 @@ for _, row in conversion_2026.iterrows():
     first = row['First Name'].strip()
     last = row['Last Name'].strip()
     year = int(row['Year'])
-    conv_keys.add((first, last, year))
+    conv_keys.add((build_name_key(first, last), year))
 
 print(f"  Conversion data (athlete, year) combinations: {len(conv_keys)}")
 print()
@@ -75,7 +87,7 @@ for idx, row in conversion_2026.iterrows():
     last = row['Last Name'].strip()
     year = int(row['Year'])
     
-    key = (first, last, year)
+    key = (build_name_key(first, last), year)
     if key in css_keys:
         conversion_2026.loc[idx, 'CSS'] = 'YES'
         matches_found += 1
@@ -91,21 +103,22 @@ print("Creating rows for missing CSS (athlete, year) combinations...")
 new_rows_list = []
 
 # Process ALL CSS entries - only add if NOT already in conversion data
-for first, last, year in css_keys:
-    key = (first, last, year)
+for name_key, year in css_keys:
+    key = (name_key, year)
     
     # Only add if this (athlete, year) is NOT in conversion data
     if key not in conv_keys:
         # Find this entry in CSS dataset for sport info
         css_entry = css_yes[
-            (css_yes['First Name'].str.strip() == first) &
-            (css_yes['Last Name'].str.strip() == last) &
+            (css_yes['First Name'].str.strip().apply(normalize_name) + css_yes['Last Name'].str.strip().apply(normalize_name) == name_key) &
             (css_yes['Year'].astype(int) == year)
         ]
         
         if len(css_entry) > 0:
             css_row = css_entry.iloc[0]
             sport = css_row['Sport'] if pd.notna(css_row['Sport']) else ''
+            first = css_row['First Name'].strip()
+            last = css_row['Last Name'].strip()
             
             new_row = {
                 'Sport': sport,
@@ -243,7 +256,7 @@ print()
 # Count unique CSS athletes
 css_athletes_final = set()
 for _, row in final_dataset[final_dataset['CSS'] == 'YES'].iterrows():
-    css_athletes_final.add((row['First Name'].strip(), row['Last Name'].strip()))
+    css_athletes_final.add(build_name_key(row['First Name'], row['Last Name']))
 
 print(f"Unique CSS athletes: {len(css_athletes_final)}")
 print(f"Expected (from CSS dataset): {len(css_athletes)}")
@@ -256,7 +269,7 @@ css_entries_final = set()
 for _, row in final_dataset[final_dataset['CSS'] == 'YES'].iterrows():
     # Only count if First Name and Last Name are populated (to distinguish from nomination)
     if str(row['First Name']).strip() and str(row['Last Name']).strip():
-        css_entries_final.add((row['First Name'].strip(), row['Last Name'].strip(), int(row['Year'])))
+        css_entries_final.add((build_name_key(row['First Name'], row['Last Name']), int(row['Year'])))
 
 print(f"Unique (athlete, year) CSS entries: {len(css_entries_final)}")
 print(f"Expected (from CSS dataset): {len(css_keys)}")

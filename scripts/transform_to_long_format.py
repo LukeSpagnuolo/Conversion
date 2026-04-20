@@ -1,21 +1,42 @@
 #!/usr/bin/env python3
 """
-Transform the CSV from wide format (year levels as columns) to long format
-(year levels as rows)
+Transform the CSV from wide format (class columns by year) to long format.
+
+Only rows with a class value of YES are kept, and the resulting CSS year uses
+the latter year from the source column heading (for example, 11/12 -> 2012).
 """
 
 import pandas as pd
 import re
+import unicodedata
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
+SOURCE_PATH = BASE_DIR.parent / "CSSAthleteConversion_old.csv"
+OUTPUT_PATH = BASE_DIR / "CSSAthleteConversion_long.csv"
 
-# Read the CSV, skipping the metadata rows (first 5 rows)
-df = pd.read_csv(BASE_DIR / "CSSAthleteConversion_old.csv", skiprows=5)
 
-# Identify the year level columns and their pairs
-# Pattern: columns like "11/12 Level" and "11/12 Class"
-year_pattern = re.compile(r'(\d{2}/\d{2})\s+(Level|Class)')
+def normalize_full_name(value):
+    if pd.isna(value):
+        return ''
+
+    normalized = unicodedata.normalize('NFKD', str(value))
+    ascii_text = normalized.encode('ascii', 'ignore').decode('ascii')
+    return re.sub(r'[^a-z0-9]+', '', ascii_text.lower())
+
+
+TYPO_FULL_NAMES = {
+    'mustaphahayestroare',
+    'juiletteporter',
+    'bryonlambert',
+}
+
+# Read the CSV.
+df = pd.read_csv(SOURCE_PATH)
+
+# Identify the class columns.
+# Pattern: columns like "11/12 Class"
+year_pattern = re.compile(r'(\d{2}/\d{2})\s+Class$')
 
 # Extract unique years from the columns
 years = set()
@@ -43,50 +64,50 @@ print(f"Year columns: {year_cols}")
 # Create list to hold rows for long format
 long_rows = []
 
-for idx, row in df.iterrows():
+for _, row in df.iterrows():
     # Get the ID information for this person
     id_values = row[id_cols].to_dict()
-    
-    # Create a row for each year
+
+    # Create a row for each year where the class value is YES
     for year in years:
-        level_col = f"{year} Level"
         class_col = f"{year} Class"
-        
-        # Check if these columns exist
-        if level_col in df.columns and class_col in df.columns:
-            new_row = id_values.copy()
-            # Convert year format (e.g., "11/12" -> 2012)
-            year_parts = year.split('/')
-            later_year = int(year_parts[1])
-            # Add 2000 to convert 2-digit year to 4-digit year
-            full_year = 2000 + later_year
-            new_row['Year'] = full_year
-            new_row['Level'] = row.get(level_col, '')
-            new_row['Class'] = row.get(class_col, '')
-            long_rows.append(new_row)
+
+        if class_col in df.columns:
+            class_value = row.get(class_col, '')
+            if pd.notna(class_value) and str(class_value).strip().upper() == 'YES':
+                new_row = id_values.copy()
+                year_parts = year.split('/')
+                later_year = int(year_parts[1])
+                new_row['CSS year'] = 2000 + later_year
+                long_rows.append(new_row)
 
 # Create the long format dataframe
 long_df = pd.DataFrame(long_rows)
 
 # Keep only the specified columns in the requested order
-cols_order = ['Sport', 'First Name', 'Last Name', 'Year', 'Level', 'Class']
+cols_order = ['Last Name', 'First Name', 'Full Name', 'Sport', 'Region', 'CSS year']
 long_df = long_df[cols_order]
 
-# Remove rows where Level is 'X' or NaN (actual null values)
-long_df = long_df[~long_df['Level'].isin(['X']) & long_df['Level'].notna()]
+# Normalize Full Name to a single lowercase token for consistent matching.
+long_df['Full Name'] = long_df['Full Name'].apply(normalize_full_name)
 
-# Keep only rows where Class is "YES" AND Level is 0 or Prov Dev 3
-long_df = long_df[
-    (long_df['Class'].str.upper() == 'YES') & 
-    (long_df['Level'].isin(['0', 'Prov Dev 3', 'PD3', 'prov dev 3', 'pd3']))
-]
+# Drop known typo variants from the dataset.
+before_typos = len(long_df)
+long_df = long_df[~long_df['Full Name'].isin(TYPO_FULL_NAMES)].copy()
+after_typos = len(long_df)
+
+# Deduplicate on the normalized name and CSS year.
+before_dedup = len(long_df)
+long_df = long_df.drop_duplicates(subset=['Full Name', 'CSS year'], keep='first').reset_index(drop=True)
+after_dedup = len(long_df)
 
 # Save to a new CSV
-output_path = BASE_DIR / "CSSAthleteConversion_long.csv"
-long_df.to_csv(output_path, index=False)
+long_df.to_csv(OUTPUT_PATH, index=False)
 
 print(f"\nOriginal shape: {df.shape}")
 print(f"Long format shape: {long_df.shape}")
-print(f"\nSaved to: {output_path}")
+print(f"Typo rows removed: {before_typos - after_typos}")
+print(f"Deduplicated rows removed: {before_dedup - after_dedup}")
+print(f"\nSaved to: {OUTPUT_PATH}")
 print(f"\nFirst few rows of transformed data:")
 print(long_df.head(15))
