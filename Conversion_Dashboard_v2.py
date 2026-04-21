@@ -246,6 +246,7 @@ app.layout = html.Div([
                 html.Div(id="conversion-summary"),
                 html.Div(id="via-sport-report", style={"marginBottom": "18px"}),
                 dcc.Graph(id="program-lines-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
+                dcc.Graph(id="provincial-to-national-bar-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
                 dcc.Graph(id="program-composition-bar-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
                 dcc.Graph(id="cohort-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
                 dcc.Graph(id="years-targeted-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
@@ -292,6 +293,7 @@ app.clientside_callback(
             'via-sport-report',
             'time-series-graph',
             'program-lines-graph',
+            'provincial-to-national-bar-chart',
             'program-composition-bar-chart',
             'cohort-pie-chart',
             'years-targeted-pie-chart',
@@ -639,6 +641,7 @@ def update_year_dropdown(selected_sports):
     Output("conversion-summary", "children"),
     Output("via-sport-report", "children"),
     Output("program-lines-graph", "figure"),
+    Output("provincial-to-national-bar-chart", "figure"),
     Output("program-composition-bar-chart", "figure"),
     Output("cohort-pie-chart", "figure"),
     Output("years-targeted-pie-chart", "figure"),
@@ -653,7 +656,7 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
     if not selected_sports:
         empty = go.Figure()
         msg   = html.Div("No sport(s) selected.", style={"padding": "8px"})
-        return empty, msg, html.Div(), empty, empty, empty, empty, empty, empty
+        return empty, msg, html.Div(), empty, empty, empty, empty, empty, empty, empty
 
     dff = _filter_dashboard_df(selected_sports, filter_2026, selected_years)
 
@@ -862,6 +865,67 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
         autosize=True,
     )
 
+    # ── Provincial -> national conversion stacked bar ───────────────────────
+    athlete_cols = ["Sport", "First Name", "Last Name"]
+    yearly_levels = (
+        dff
+        .groupby(athlete_cols + ["_year_num"], as_index=False)
+        .agg(
+            year_best_level=("_program_level", "max"),
+            convert_year_flag=("Convert Year", lambda s: s.astype(str).str.upper().eq("Y").any()),
+        )
+        .sort_values(athlete_cols + ["_year_num"])
+    )
+    yearly_levels["prev_year"] = yearly_levels.groupby(athlete_cols)["_year_num"].shift(1)
+    yearly_levels["prev_level"] = yearly_levels.groupby(athlete_cols)["year_best_level"].shift(1)
+    yearly_levels["is_provincial_to_national"] = (
+        yearly_levels["convert_year_flag"]
+        & yearly_levels["year_best_level"].isin(NATIONAL_TARGET_LEVELS)
+        & yearly_levels["prev_level"].isin(NATIONAL_SOURCE_LEVELS)
+        & (yearly_levels["_year_num"] == yearly_levels["prev_year"] + 1)
+    )
+
+    prov_to_nat = yearly_levels[yearly_levels["is_provincial_to_national"]].copy()
+    level_labels = {4: "Uncarded", 5: "SC Carded"}
+    prov_to_nat["Target Level"] = prov_to_nat["year_best_level"].map(level_labels)
+
+    prov_to_nat_counts = (
+        prov_to_nat
+        .groupby(["_year_num", "Target Level"], as_index=False)
+        .size()
+        .rename(columns={"_year_num": "Year", "size": "Count"})
+        .sort_values("Year")
+    )
+
+    fig_prov_nat = go.Figure()
+    for idx, target_level in enumerate(["Uncarded", "SC Carded"]):
+        segment = prov_to_nat_counts[prov_to_nat_counts["Target Level"] == target_level]
+        fig_prov_nat.add_trace(go.Bar(
+            x=segment["Year"],
+            y=segment["Count"],
+            name=target_level,
+            marker=dict(color=VIBRANT_PALETTE[3 + idx]),
+        ))
+
+    fig_prov_nat.update_layout(
+        barmode="stack",
+        title=f"Provincial to National Conversions by Level — {_sports_label(selected_sports)}",
+        template="plotly_dark",
+        paper_bgcolor=COLOR_BLACK,
+        plot_bgcolor=COLOR_DARK_GRAY,
+        font=dict(color=COLOR_WHITE),
+        title_font=dict(color=COLOR_WHITE, size=16),
+        xaxis=dict(title="Year", tickmode="linear", dtick=1, tickformat=".0f", gridcolor="#444"),
+        yaxis=dict(title="Conversion Count", gridcolor="#444"),
+        legend=dict(
+            orientation="h", x=0.5, xanchor="center", y=-0.2, yanchor="top",
+            bgcolor=COLOR_DARK_GRAY, bordercolor=COLOR_RED, borderwidth=2,
+        ),
+        margin=dict(l=40, r=30, t=50, b=40),
+        height=400,
+        autosize=True,
+    )
+
     # ── Program composition stacked bar ───────────────────────────────────────
     program_year_data = (
         dff
@@ -1037,8 +1101,18 @@ def update_graphs(selected_sports, filter_2026, selected_years, prog_filter):
             autosize=True,
         )
 
-        return (fig_ts, summary_table, via_sport_report, fig_program_lines, fig_bar,
-            fig_pie, fig_disp, fig_prog, fig_age_pie)
+    return (
+        fig_ts,
+        summary_table,
+        via_sport_report,
+        fig_program_lines,
+        fig_prov_nat,
+        fig_bar,
+        fig_pie,
+        fig_disp,
+        fig_prog,
+        fig_age_pie,
+    )
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
