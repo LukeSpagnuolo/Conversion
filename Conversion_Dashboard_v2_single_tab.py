@@ -194,7 +194,6 @@ NATIONAL_TARGET_LEVELS = {4, 5}
 app.layout = html.Div([
     navbar_component.render() if navbar_component else html.Div(),
     html.Div(id="global-loading-bar", className="global-loading-bar"),
-    dcc.Download(id="download-via-sport-csv"),
     html.Div(id="main-content", children=[
         dcc.Tabs(id="dashboard-tabs", value="dashboard-tab", children=[
             dcc.Tab(label="Dashboard", value="dashboard-tab", children=[
@@ -274,14 +273,6 @@ app.layout = html.Div([
 
                 dcc.Graph(id="age-conversion-pie-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
                 ]),
-            ]),
-            dcc.Tab(label="All Sports Table", value="all-sports-tab", children=[
-                html.Div([
-                    html.P("Generate the full via sport report across all sports and all data."),
-                    dbc.Button("Generate All Sports Table", id="btn-generate-all-sports-table", color="danger", className="me-2 mb-3"),
-                    dbc.Button("⬇ Download Via Sport CSV", id="btn-download-via-sport-csv", color="success", className="mb-3"),
-                    dcc.Loading(html.Div(id="all-sports-table-output"), type="dot"),
-                ], style={"padding": "16px 0"}),
             ]),
         ])
     ], style={"padding": "0 12px", "maxWidth": "1400px", "margin": "0 auto", "overflowX": "hidden"}),
@@ -615,29 +606,6 @@ def download_filtered_csv(n_clicks, selected_sports, filter_2026, filter_css, se
         return dash.no_update
     dff = _filter_dashboard_df(selected_sports, filter_2026, filter_css, selected_years)
     return dcc.send_data_frame(dff.to_csv, "conversion_data_filtered.csv", index=False)
-
-
-@app.callback(
-    Output("download-via-sport-csv", "data"),
-    Input("btn-download-via-sport-csv", "n_clicks"),
-    prevent_initial_call=True,
-)
-def download_via_sport_csv(n_clicks):
-    report_df = _via_sport_report_csv(df)
-    if report_df is None or report_df.empty:
-        return dash.no_update
-
-    return dcc.send_data_frame(report_df.to_csv, "via_sport_report_all_sports.csv", index=False)
-
-
-@app.callback(
-    Output("all-sports-table-output", "children"),
-    Input("btn-generate-all-sports-table", "n_clicks"),
-    prevent_initial_call=True,
-)
-def generate_all_sports_table(n_clicks):
-    report = _build_via_sport_report(df)
-    return report
 
 
 @app.callback(
