@@ -252,7 +252,6 @@ app.layout = html.Div([
 
                 dcc.Graph(id="time-series-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "500px"}),
                 html.Div(id="conversion-summary"),
-                html.Div(id="via-sport-report", style={"marginBottom": "18px"}),
                 dcc.Graph(id="program-lines-graph", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
                 dcc.Graph(id="provincial-to-national-bar-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
                 dcc.Graph(id="program-composition-bar-chart", config={"responsive": True}, style={"width": "100%", "minWidth": 0, "height": "400px"}),
@@ -290,7 +289,6 @@ app.clientside_callback(
         var ids = [
             'pdf-filters',
             'conversion-summary',
-            'via-sport-report',
             'time-series-graph',
             'program-lines-graph',
             'provincial-to-national-bar-chart',
@@ -624,7 +622,6 @@ def update_year_dropdown(selected_sports):
 @app.callback(
     Output("time-series-graph", "figure"),
     Output("conversion-summary", "children"),
-    Output("via-sport-report", "children"),
     Output("program-lines-graph", "figure"),
     Output("provincial-to-national-bar-chart", "figure"),
     Output("program-composition-bar-chart", "figure"),
@@ -642,11 +639,9 @@ def update_graphs(selected_sports, filter_2026, filter_css, selected_years, prog
     if not selected_sports:
         empty = go.Figure()
         msg   = html.Div("No sport(s) selected.", style={"padding": "8px"})
-        return empty, msg, html.Div(), empty, empty, empty, empty, empty, empty, empty
+        return empty, msg, empty, empty, empty, empty, empty, empty, empty
 
     dff = _filter_dashboard_df(selected_sports, filter_2026, filter_css, selected_years)
-
-    via_sport_report = _build_via_sport_report(dff)
 
     # ── Time-series metrics ───────────────────────────────────────────────────
     grp = dff.groupby('Year', sort=True)
@@ -1090,7 +1085,6 @@ def update_graphs(selected_sports, filter_2026, filter_css, selected_years, prog
     return (
         fig_ts,
         summary_table,
-        via_sport_report,
         fig_program_lines,
         fig_prov_nat,
         fig_bar,
