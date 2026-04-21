@@ -243,7 +243,7 @@ app.layout = html.Div([
                 html.Div([
                     dcc.Checklist(
                         id="css-checkbox",
-                        options=[{"label": "Only athletes with CSS = YES at any point in their history", "value": "css"}],
+                        options=[{"label": "Only athletes with CSS at any point in their history", "value": "css"}],
                         value=[],
                         inputStyle={"margin-right": "10px"},
                     )
