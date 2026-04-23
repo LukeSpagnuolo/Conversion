@@ -529,7 +529,6 @@ def _build_via_sport_report_df(dff):
         .agg(
             **{
                 "TOTAL Athletes 2026 identified (Conv Data)": ("Sport", "size"),
-                "Sum of Total conversion Since 2022": ("current_converted", "sum"),
                 "Carrer conversion rate for 2026 cohort": ("career_converted", "mean"),
                 "Average Years Targeted 2026 cohort (Career)": ("Years_Targeted", "mean"),
                 "Average Age 2026 Cohort": ("age_2026", "mean"),
@@ -544,15 +543,17 @@ def _build_via_sport_report_df(dff):
     )
 
     report_output = cohort_rollup.merge(current_year_rollup, on="Sport", how="left")
-    report_output = report_output.merge(recent_conversions, on="Sport", how="left")
+    report_output = report_output.merge(recent_conversions, on="Sport", how="left", suffixes=("", "_from_recent"))
     report_output = report_output.merge(national_recent, on="Sport", how="left")
     report_output = report_output.merge(cohort_gender[["Sport", "Gender (F/M/X) - 2026 Cohort"]], on="Sport", how="left")
     report_output["Carrer conversion rate for 2026 cohort"] = (
         report_output["Carrer conversion rate for 2026 cohort"] * 100
     ).round(1)
     report_output["2026 conversion Rate (Current Year convert / Current year total)"] = (
-        report_output["current_converted"] / report_output["current_total"] * 100
-    ).round(1)
+        (report_output["current_converted"] / report_output["current_total"] * 100)
+        .fillna(0)
+        .round(1)
+    )
     report_output["Average Years Targeted 2026 cohort (Career)"] = report_output["Average Years Targeted 2026 cohort (Career)"].round(2)
     report_output["Average Age 2026 Cohort"] = report_output["Average Age 2026 Cohort"].round(1)
     report_output["TOTAL Athletes 2026 identified (Conv Data)"] = report_output["TOTAL Athletes 2026 identified (Conv Data)"].astype(int)
