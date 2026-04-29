@@ -36,3 +36,38 @@
     left: 100%;
   }
 }
+
+/* Metrics table styling for PDF export */
+.conversion-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #ffffff;
+  border: 1px solid #333333;
+}
+
+.conversion-summary-table thead {
+  background-color: #f0f0f0;
+}
+
+.conversion-summary-table th {
+  background-color: #f0f0f0;
+  color: #1a1a1a;
+  padding: 10px 12px;
+  border: 1px solid #cccccc;
+  font-weight: 600;
+  text-align: left;
+}
+
+.conversion-summary-table td {
+  color: #1a1a1a;
+  padding: 8px 12px;
+  border: 1px solid #e0e0e0;
+}
+
+.conversion-summary-table tbody tr:nth-child(even) {
+  background-color: #f9f9f9;
+}
+
+.conversion-summary-table tbody tr:nth-child(odd) {
+  background-color: #ffffff;
+}
