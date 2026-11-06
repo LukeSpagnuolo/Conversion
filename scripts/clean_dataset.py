@@ -124,11 +124,14 @@ for fn, ln, y, d in zip(raw["First Name"], raw["Last Name"], raw["Year"], raw["D
     d = parse_any(d)
     if d:
         raw_dob.setdefault((norm(fn) + norm(ln), y), set()).add(d)
-nom = pd.read_csv(NOM_RAW_PATH, dtype=str, keep_default_na=False)
-for fn, ln, d in zip(nom["first_name"], nom["last_name"], nom["dob"]):
-    d = parse_any(d)
-    if d:
-        raw_dob.setdefault((norm(fn) + norm(ln), "2026"), set()).add(d)
+# NOM_RAW_PATH: one or more raw nomination exports, separated by "|"
+for nom_path in NOM_RAW_PATH.split("|"):
+    nom = pd.read_csv(nom_path, dtype=str, keep_default_na=False)
+    years = nom["nomination_fiscal_year"].str[-4:] if "nomination_fiscal_year" in nom else ["2026"] * len(nom)
+    for fn, ln, d, y in zip(nom["first_name"], nom["last_name"], nom["dob"], years):
+        d = parse_any(d)
+        if d:
+            raw_dob.setdefault((norm(fn) + norm(ln), y), set()).add(d)
 
 df["_own"] = df["First Name"].map(norm) + df["Last Name"].map(norm)
 df["_fn"], df["_ln"] = df["First Name"].map(norm), df["Last Name"].map(norm)
