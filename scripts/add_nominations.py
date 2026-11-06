@@ -34,10 +34,13 @@ for _, r in add.iterrows():
         note = r["Status"] + (f'; export DOB {r["DOB"]} kept as dataset DOB {dob}' if dob != r["DOB"] else "")
     else:
         key, dob = own, r["DOB"]
-        if key in ds_keys:
-            # name already in the dataset but name+DOB+sport did not match -> different athlete
+        if key in ds_keys and ds_dob.get(key) == dob:
+            # same name + same DOB in another sport -> same person, multi-sport athlete
+            note = "Existing athlete, new sport (same name + DOB)"
+        elif key in ds_keys:
+            # name already in the dataset with a different or missing DOB -> can't confirm, keep separate
             key = f"{own}_{dob[:4]}"
-            note = "New athlete; name already used in dataset (no DOB+sport match), key suffixed"
+            note = "New athlete; name already used in dataset (no DOB match), key suffixed"
         else:
             note = "New athlete"
     rows.append({"Sport": r["Sport"], "First Name": r["First Name"], "Last Name": r["Last Name"],

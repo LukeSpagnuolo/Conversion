@@ -280,6 +280,41 @@ for i, r in df[fh_copy].iterrows():
 stats["field_hockey_copies_removed"] = int(fh_copy.sum())
 df = df[~fh_copy]
 
+# 8c. same name + same DOB under a suffixed key -> one person (multi-sport) -----
+base = df["Full_Name"].str.replace(r"_\d{4}$", "", regex=True)
+for (b, dob_), g in df[(base != df["Full_Name"]) & (df["Date of Birth"] != "")].groupby([base, "Date of Birth"]):
+    plain = df[(df["Full_Name"] == b) & (df["Date of Birth"] == dob_)]
+    if len(plain):
+        for i in g.index:
+            L("8c multi-sport athlete re-linked", df.loc[i], "Full_Name", df.at[i, "Full_Name"], b, f"same name + DOB {dob_} as {b}")
+            df.at[i, "Full_Name"] = b
+            stats["multisport_keys_relinked"] += 1
+
+# 8d. CSS Multisport nominations (agreed 2026-11-06) ----------------------------
+# Multisport = Canadian Sport School nomination -> CSS = YES. An athlete must not
+# appear in Multisport AND another sport in the same year: drop the Multisport row
+# and mark the other sport's row(s) CSS = YES.
+ms = df["Sport"].str.strip().str.lower() == "multisport"
+for i in df[ms & (df["CSS"] != "YES")].index:
+    L("8d CSS multisport", df.loc[i], "CSS", df.at[i, "CSS"], "YES", "Multisport = CSS nomination")
+    df.at[i, "CSS"] = "YES"
+    stats["css_set_on_multisport"] += 1
+other_years = set(zip(df.loc[~ms, "Full_Name"], df.loc[~ms, "Year"]))
+dup_ms = ms & pd.Series([k in other_years for k in zip(df["Full_Name"], df["Year"])], index=df.index)
+for i, r in df[dup_ms].iterrows():
+    tgt = df[(df["Full_Name"] == r["Full_Name"]) & (df["Year"] == r["Year"]) & ~ms]
+    if r["_lvl"] > tgt["_lvl"].max():
+        review.append(("CSS Multisport level was higher than sport level (sport level kept)", r["Full_Name"], r["First Name"],
+                       r["Last Name"], "; ".join(tgt["Sport"]), r["Year"], f'Multisport {r["Program"]} vs {"; ".join(tgt["Program"])}'))
+    for j in tgt.index:
+        if df.at[j, "CSS"] != "YES":
+            L("8d CSS multisport", df.loc[j], "CSS", df.at[j, "CSS"], "YES", "also nominated by CSS as Multisport this year")
+            df.at[j, "CSS"] = "YES"
+            stats["css_set_on_other_sport"] += 1
+    L("8d CSS multisport", r, "row", "Multisport", f"removed (athlete in {'; '.join(tgt['Sport'])} same year)", "no Multisport + other sport in same year")
+    stats["multisport_rows_removed"] += 1
+df = df[~dup_ms]
+
 # 9. recompute Years Targeted + Convert Year (repo logic) ----------------------
 df["_y"] = pd.to_numeric(df["Year"])
 df["_sg"] = df["Sport"].map(group)
