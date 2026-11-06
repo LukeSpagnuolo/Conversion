@@ -1,16 +1,6 @@
-"""Clean Conversion_Data_2026_final.csv (run 2026-11-06).
+"""Clean Conversion_Data_2026_final.csv.
 
-Athletes are matched on name + date of birth + sport (see SPORT_GROUP for sports
-treated as one). Writes a per-change log and a list of items needing human review.
-
-usage:
-  python scripts/clean_dataset.py \
-      Conversion_Data_2026_final.csv  <out.csv> <changelog.csv> <review.csv> \
-      scripts/data/Conversion_Data_2026.csv  "2026_Nominated athletes.csv" \
-      <name_merge_decisions.csv>
-
-The changelog/review/decisions outputs contain athlete names and DOBs - keep them
-out of the repo.
+usage: clean_dataset.py <in.csv> <out.csv> <changelog.csv> <review.csv>
 """
 import re
 import sys
@@ -251,7 +241,9 @@ for key, grp in df.groupby("Full_Name"):
 for key, grp in df.groupby("Full_Name"):
     d = {x for x in grp["Date of Birth"] if x}
     if len(d) == 1:
-        for i in grp[grp["Date of Birth"] == ""].index:
+        birth_year = int(next(iter(d))[:4])
+        # never fill a DOB that would make the row impossible (see step 3)
+        for i in grp[(grp["Date of Birth"] == "") & (pd.to_numeric(grp["Year"]) - birth_year >= 4)].index:
             L("7 filled from same athlete", df.loc[i], "Date of Birth", "", next(iter(d)), "athlete's other rows")
             df.at[i, "Date of Birth"] = next(iter(d))
             stats["dob_filled"] += 1
