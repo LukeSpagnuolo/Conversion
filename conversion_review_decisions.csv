@@ -33,6 +33,7 @@ Year,First Name,Last Name,DOB,Sport,Issue,Decision,Possible match,Dataset key,De
 2026,Thea,Jeffrey,2008-06-15,Ringette,"Same name and sport, different DOB",Same person,theajeffrey,theajeffrey,2026-11-09 (last round; confirmed from ZIP)
 2026,Aiden,Kirk,2007-05-28,Swimming,"Same name and sport, different DOB",Same person,aidenkirk,aidenkirk,2026-11-09 (last round; confirmed from ZIP)
 2026,Madison,Louis,2009-11-13,Lacrosse,"Same name and sport, different DOB",Same person,madisonlouis,madisonlouis,2026-11-09 (last round; confirmed from ZIP)
+2026,Madison,Louis,2009-06-10,Lacrosse,"Same name and sport, different DOB",Same person,madisonlouis,madisonlouis,2026-11-09 (implied: other 2026 nomination of the same athlete reviewed as same person)
 2026,Bohdan,Morris,2008-02-24,Rugby,"Same DOB and sport, name spelled differently",Same person,bohdinmorris,bohdinmorris,2026-11-09 (last round; confirmed from ZIP)
 2026,Keira,Neal,2005-05-08,Sitting Volleyball,"Same name and sport, dataset has no DOB",Same person,keiraneal,keiraneal,2026-11-09 (last round; confirmed from ZIP)
 2026,Jihwan,Park,1990-06-29,Taekwondo,"Same name and sport, dataset has no DOB",Same person,jihwanpark,jihwanpark,2026-11-09 (last round; confirmed from ZIP)
