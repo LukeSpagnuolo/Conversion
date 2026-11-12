@@ -118,7 +118,15 @@ df = pd.read_csv(DF_PATH)
 df["_year_num"] = pd.to_numeric(df["Year"], errors="coerce")
 df["DOB_parsed"] = pd.to_datetime(df["Date of Birth"], errors="coerce")
 df["BirthYear"] = df["DOB_parsed"].dt.year
-df["Full_Name"] = df["First Name"].astype(str).str.strip() + " " + df["Last Name"].astype(str).str.strip()
+# Full_Name is the cleaned athlete key from the dataset (name variants already merged,
+# same-name different people kept apart). Athletes are identified by Full_Name (+ Sport).
+df["Full_Name"] = df["Full_Name"].astype(str).str.strip()
+df["Display_Name"] = df["First Name"].astype(str).str.strip() + " " + df["Last Name"].astype(str).str.strip()
+# "Current year" is per sport: the most recent year that sport has data for
+# (2027 for sports with 2026-27 nominations in, 2026 for sports mid-cycle, etc.).
+SPORT_LATEST_YEAR = df.groupby("Sport")["_year_num"].max()
+df["_sport_latest_year"] = df["Sport"].map(SPORT_LATEST_YEAR)
+df["_is_sport_latest_year"] = df["_year_num"].eq(df["_sport_latest_year"])
 df["_program_level"] = df["Program"].astype(str).str.strip().map({
     "Prov Dev 3": 1,
     "Prov Dev 2": 2,
@@ -233,8 +241,8 @@ app.layout = html.Div([
 
                 html.Div([
                     dcc.Checklist(
-                        id="has-2026-checkbox",
-                        options=[{"label": "Only athletes with 2026 as one of their years", "value": "2026"}],
+                        id="has-current-year-checkbox",
+                        options=[{"label": "Only athletes in their sport's most recent year", "value": "current"}],
                         value=[],
                         inputStyle={"margin-right": "10px"},
                     )
@@ -357,16 +365,16 @@ def _sport_display_name(sport_name):
     return REPORT_SPORT_LABELS.get(sport_name, sport_name)
 
 
-def _filter_dashboard_df(selected_sports, filter_2026, filter_css, selected_years):
+def _filter_dashboard_df(selected_sports, filter_current, filter_css, selected_years):
     dff = df[df['Sport'].isin(selected_sports)].copy()
 
-    if filter_2026 and "2026" in filter_2026:
-        key_cols = ['First Name', 'Last Name', 'Sport']
-        has_2026 = dff.groupby(key_cols)['_year_num'].transform(lambda s: s.eq(2026).any())
-        dff = dff[has_2026].copy()
+    if filter_current and "current" in filter_current:
+        key_cols = ['Full_Name', 'Sport']
+        has_current = dff.groupby(key_cols)['_is_sport_latest_year'].transform('any')
+        dff = dff[has_current].copy()
 
     if filter_css and "css" in filter_css:
-        key_cols = ['First Name', 'Last Name', 'Sport']
+        key_cols = ['Full_Name', 'Sport']
         has_css_yes = dff.groupby(key_cols)['CSS'].transform(
             lambda s: s.astype(str).str.upper().eq("YES").any()
         )
@@ -434,7 +442,7 @@ def _build_via_sport_report_df(dff):
     past_four_years_start = latest_year - 3
     past_two_years_start = latest_year - 1
 
-    athlete_cols = ["Sport", "First Name", "Last Name"]
+    athlete_cols = ["Sport", "Full_Name"]
 
     # Athlete-level conversion in past 4 years
     recent_mask = report_df["_year_num"].between(past_four_years_start, latest_year)
@@ -595,15 +603,15 @@ def _via_sport_report_csv(dff):
     Output("download-csv", "data"),
     Input("btn-download-csv", "n_clicks"),
     State("sport-dropdown", "value"),
-    State("has-2026-checkbox", "value"),
+    State("has-current-year-checkbox", "value"),
     State("css-checkbox", "value"),
     State("year-filter", "value"),
     prevent_initial_call=True,
 )
-def download_filtered_csv(n_clicks, selected_sports, filter_2026, filter_css, selected_years):
+def download_filtered_csv(n_clicks, selected_sports, filter_current, filter_css, selected_years):
     if not selected_sports:
         return dash.no_update
-    dff = _filter_dashboard_df(selected_sports, filter_2026, filter_css, selected_years)
+    dff = _filter_dashboard_df(selected_sports, filter_current, filter_css, selected_years)
     return dcc.send_data_frame(dff.to_csv, "conversion_data_filtered.csv", index=False)
 
 
@@ -631,23 +639,23 @@ def update_year_dropdown(selected_sports):
     Output("program-pie-chart", "figure"),
     Output("age-conversion-pie-chart", "figure"),
     Input("sport-dropdown", "value"),
-    Input("has-2026-checkbox", "value"),
+    Input("has-current-year-checkbox", "value"),
     Input("css-checkbox", "value"),
     Input("year-filter", "value"),
     Input("age-pie-program-filter", "value"),
 )
-def update_graphs(selected_sports, filter_2026, filter_css, selected_years, prog_filter):
+def update_graphs(selected_sports, filter_current, filter_css, selected_years, prog_filter):
     if not selected_sports:
         empty = go.Figure()
         msg   = html.Div("No sport(s) selected.", style={"padding": "8px"})
         return empty, msg, empty, empty, empty, empty, empty, empty, empty
 
-    dff = _filter_dashboard_df(selected_sports, filter_2026, filter_css, selected_years)
+    dff = _filter_dashboard_df(selected_sports, filter_current, filter_css, selected_years)
 
     # ── Time-series metrics ───────────────────────────────────────────────────
     grp = dff.groupby('Year', sort=True)
 
-    unique_athletes  = dff.drop_duplicates(['Year', 'First Name', 'Last Name']).groupby('Year').size().sort_index()
+    unique_athletes  = dff.drop_duplicates(['Year', 'Full_Name']).groupby('Year').size().sort_index()
     converted        = grp['Convert Year'].apply(lambda col: col.eq('Y').sum()).sort_index()
     avg_targeted     = grp['Years Targeted'].mean().sort_index()
     conversion_rate  = (converted / unique_athletes * 100).fillna(0)
@@ -707,7 +715,7 @@ def update_graphs(selected_sports, filter_2026, filter_css, selected_years, prog
 
     per_ath_years = (
         dff
-        .groupby(['First Name', 'Last Name', 'Sport'])['Years Targeted']
+        .groupby(['Full_Name', 'Sport'])['Years Targeted']
         .max()
         .reset_index(name='years_targeted')
     )
@@ -716,15 +724,15 @@ def update_graphs(selected_sports, filter_2026, filter_css, selected_years, prog
 
     per_ath_years_range = (
         dff
-        .groupby(['First Name', 'Last Name', 'Sport'], as_index=False)
+        .groupby(['Full_Name', 'Sport'], as_index=False)
         .agg(first_year=('Year', 'min'), last_year=('Year', 'max'))
     )
     per_ath_dob = (
         dff_age
-        .groupby(['First Name', 'Last Name', 'Sport'], as_index=False)
+        .groupby(['Full_Name', 'Sport'], as_index=False)
         .agg(birth_year=('BirthYear', 'first'))
     )
-    per_ath = per_ath_years_range.merge(per_ath_dob, on=['First Name', 'Last Name', 'Sport'], how='inner')
+    per_ath = per_ath_years_range.merge(per_ath_dob, on=['Full_Name', 'Sport'], how='inner')
     per_ath['age_first'] = per_ath['first_year'].astype(int) - per_ath['birth_year'].astype(int)
     per_ath['age_last']  = per_ath['last_year'].astype(int)  - per_ath['birth_year'].astype(int)
 
@@ -742,7 +750,7 @@ def update_graphs(selected_sports, filter_2026, filter_css, selected_years, prog
     # CSS metrics
     per_ath_css = (
         dff
-        .groupby(['First Name', 'Last Name'])
+        .groupby(['Full_Name'])
         .apply(lambda g: (g['CSS'] == 'YES').sum())
         .reset_index(name='css_count')
     )
@@ -866,7 +874,7 @@ def update_graphs(selected_sports, filter_2026, filter_css, selected_years, prog
     )
 
     # ── Provincial -> national conversion stacked bar ───────────────────────
-    athlete_cols = ["Sport", "First Name", "Last Name"]
+    athlete_cols = ["Sport", "Full_Name"]
     yearly_levels = (
         dff
         .groupby(athlete_cols + ["_year_num"], as_index=False)
@@ -970,7 +978,7 @@ def update_graphs(selected_sports, filter_2026, filter_css, selected_years, prog
     # Cohort conversion pie
     conv_by_athlete = (
         dff_pies
-        .groupby(['First Name', 'Last Name'])['Convert Year']
+        .groupby(['Full_Name'])['Convert Year']
         .apply(lambda col: col.eq('Y').any())
     )
     num_converted = int(conv_by_athlete.sum())
@@ -997,7 +1005,7 @@ def update_graphs(selected_sports, filter_2026, filter_css, selected_years, prog
     )
 
     # Years-targeted dispersion pie
-    years_by_athlete = dff_pies.groupby(['First Name', 'Last Name'])['Years Targeted'].max()
+    years_by_athlete = dff_pies.groupby(['Full_Name'])['Years Targeted'].max()
     counts  = years_by_athlete.value_counts().sort_index()
     fig_disp = go.Figure(data=[go.Pie(
         labels=[f"{yr} yr" for yr in counts.index],
