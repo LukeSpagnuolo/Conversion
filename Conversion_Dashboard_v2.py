@@ -122,8 +122,11 @@ df["BirthYear"] = df["DOB_parsed"].dt.year
 # same-name different people kept apart). Athletes are identified by Full_Name (+ Sport).
 df["Full_Name"] = df["Full_Name"].astype(str).str.strip()
 df["Display_Name"] = df["First Name"].astype(str).str.strip() + " " + df["Last Name"].astype(str).str.strip()
-# Current year = latest nomination year in the dataset (e.g. fiscal 2026-27 -> 2027).
-CURRENT_YEAR = int(df["_year_num"].max())
+# "Current year" is per sport: the most recent year that sport has data for
+# (2027 for sports with 2026-27 nominations in, 2026 for sports mid-cycle, etc.).
+SPORT_LATEST_YEAR = df.groupby("Sport")["_year_num"].max()
+df["_sport_latest_year"] = df["Sport"].map(SPORT_LATEST_YEAR)
+df["_is_sport_latest_year"] = df["_year_num"].eq(df["_sport_latest_year"])
 df["_program_level"] = df["Program"].astype(str).str.strip().map({
     "Prov Dev 3": 1,
     "Prov Dev 2": 2,
@@ -239,8 +242,8 @@ app.layout = html.Div([
 
                 html.Div([
                     dcc.Checklist(
-                        id="has-2026-checkbox",
-                        options=[{"label": f"Only athletes with {CURRENT_YEAR} as one of their years", "value": "current"}],
+                        id="has-current-year-checkbox",
+                        options=[{"label": "Only athletes in their sport's most recent year", "value": "current"}],
                         value=[],
                         inputStyle={"margin-right": "10px"},
                     )
@@ -380,12 +383,12 @@ def _sport_sort_key(sport_name):
         return len(VIA_SPORT_REPORT_ORDER)
 
 
-def _filter_dashboard_df(selected_sports, filter_2026, filter_css, selected_years):
+def _filter_dashboard_df(selected_sports, filter_current, filter_css, selected_years):
     dff = df[df['Sport'].isin(selected_sports)].copy()
 
-    if filter_2026 and "current" in filter_2026:
-        has_2026 = dff.groupby(['Full_Name', 'Sport'])['_year_num'].transform(lambda s: s.eq(CURRENT_YEAR).any())
-        dff = dff[has_2026].copy()
+    if filter_current and "current" in filter_current:
+        has_current = dff.groupby(['Full_Name', 'Sport'])['_is_sport_latest_year'].transform('any')
+        dff = dff[has_current].copy()
 
     if filter_css and "css" in filter_css:
         key_cols = ['Full_Name', 'Sport']
@@ -457,31 +460,32 @@ def _build_via_sport_report_df(dff):
 
     athlete_cols = ["Sport", "Full_Name"]
 
-    current_year = report_df[report_df["_year_num"].eq(CURRENT_YEAR)].copy()
+    current_year = report_df[report_df["_is_sport_latest_year"]].copy()
     if current_year.empty:
         return pd.DataFrame()
 
     current_year["Gender"] = current_year["Gender"].astype(str).str.strip().str.upper()
-    current_year["age_2026"] = CURRENT_YEAR - current_year["BirthYear"]
+    current_year["age_current"] = current_year["_sport_latest_year"] - current_year["BirthYear"]
 
-    cohort_2026 = (
+    cohort_current = (
         current_year
         .groupby(athlete_cols, as_index=False)
         .agg(
             BirthYear=("BirthYear", "first"),
+            Latest_Year=("_sport_latest_year", "first"),
             Years_Targeted=("Years Targeted", "first"),
             Gender=("Gender", lambda s: s.iloc[0] if len(s) else ""),
             current_converted=("Convert Year", lambda s: s.astype(str).str.upper().eq("Y").any()),
         )
     )
-    cohort_2026["age_2026"] = CURRENT_YEAR - cohort_2026["BirthYear"]
+    cohort_current["age_current"] = cohort_current["Latest_Year"] - cohort_current["BirthYear"]
 
     career_conversion = (
         report_df
         .groupby(athlete_cols, as_index=False)
         .agg(career_converted=("Convert Year", lambda s: s.astype(str).str.upper().eq("Y").any()))
     )
-    cohort_2026 = cohort_2026.merge(career_conversion, on=athlete_cols, how="left")
+    cohort_current = cohort_current.merge(career_conversion, on=athlete_cols, how="left")
 
     recent_conversions = (
         report_df[report_df["_year_num"].ge(2022) & report_df["Convert Year"].astype(str).str.upper().eq("Y")]
@@ -515,7 +519,7 @@ def _build_via_sport_report_df(dff):
     )
 
     cohort_gender = (
-        cohort_2026.groupby("Sport")["Gender"]
+        cohort_current.groupby("Sport")["Gender"]
         .value_counts()
         .unstack(fill_value=0)
         .reset_index()
@@ -523,20 +527,21 @@ def _build_via_sport_report_df(dff):
     for gender in ["F", "M", "X"]:
         if gender not in cohort_gender.columns:
             cohort_gender[gender] = 0
-    cohort_gender["Gender (F/M/X) - 2026 Cohort"] = cohort_gender.apply(
+    cohort_gender["Gender (F/M/X) - Current Year Cohort"] = cohort_gender.apply(
         lambda row: f"F: {int(row['F'])} / M: {int(row['M'])} / X: {int(row['X'])}",
         axis=1,
     )
 
     cohort_rollup = (
-        cohort_2026
+        cohort_current
         .groupby("Sport", as_index=False)
         .agg(
             **{
-                "TOTAL Athletes 2026 identified (Conv Data)": ("Sport", "size"),
-                "Carrer conversion rate for 2026 cohort": ("career_converted", "mean"),
-                "Average Years Targeted 2026 cohort (Career)": ("Years_Targeted", "mean"),
-                "Average Age 2026 Cohort": ("age_2026", "mean"),
+                "Current Year": ("Latest_Year", "first"),
+                "TOTAL Athletes identified in Current Year (Conv Data)": ("Sport", "size"),
+                "Career conversion rate for Current Year cohort": ("career_converted", "mean"),
+                "Average Years Targeted Current Year cohort (Career)": ("Years_Targeted", "mean"),
+                "Average Age Current Year Cohort": ("age_current", "mean"),
             }
         )
     )
@@ -550,33 +555,35 @@ def _build_via_sport_report_df(dff):
     report_output = cohort_rollup.merge(current_year_rollup, on="Sport", how="left")
     report_output = report_output.merge(recent_conversions, on="Sport", how="left", suffixes=("", "_from_recent"))
     report_output = report_output.merge(national_recent, on="Sport", how="left")
-    report_output = report_output.merge(cohort_gender[["Sport", "Gender (F/M/X) - 2026 Cohort"]], on="Sport", how="left")
-    report_output["Carrer conversion rate for 2026 cohort"] = (
-        report_output["Carrer conversion rate for 2026 cohort"] * 100
+    report_output = report_output.merge(cohort_gender[["Sport", "Gender (F/M/X) - Current Year Cohort"]], on="Sport", how="left")
+    report_output["Career conversion rate for Current Year cohort"] = (
+        report_output["Career conversion rate for Current Year cohort"] * 100
     ).round(1)
-    report_output["2026 conversion Rate (Current Year convert / Current year total)"] = (
+    report_output["Current Year conversion Rate (Current Year convert / Current year total)"] = (
         (report_output["current_converted"] / report_output["current_total"] * 100)
         .fillna(0)
         .round(1)
     )
-    report_output["Average Years Targeted 2026 cohort (Career)"] = report_output["Average Years Targeted 2026 cohort (Career)"].round(2)
-    report_output["Average Age 2026 Cohort"] = report_output["Average Age 2026 Cohort"].round(1)
-    report_output["TOTAL Athletes 2026 identified (Conv Data)"] = report_output["TOTAL Athletes 2026 identified (Conv Data)"].astype(int)
+    report_output["Average Years Targeted Current Year cohort (Career)"] = report_output["Average Years Targeted Current Year cohort (Career)"].round(2)
+    report_output["Average Age Current Year Cohort"] = report_output["Average Age Current Year Cohort"].round(1)
+    report_output["TOTAL Athletes identified in Current Year (Conv Data)"] = report_output["TOTAL Athletes identified in Current Year (Conv Data)"].astype(int)
+    report_output["Current Year"] = report_output["Current Year"].astype(int)
     report_output["Sum of Total conversion Since 2022"] = report_output["Sum of Total conversion Since 2022"].fillna(0).astype(int)
     report_output["Sum of Total Conversion Provincial to national since 2022"] = report_output["Sum of Total Conversion Provincial to national since 2022"].fillna(0).astype(int)
-    report_output["Gender (F/M/X) - 2026 Cohort"] = report_output["Gender (F/M/X) - 2026 Cohort"].fillna("F: 0 / M: 0 / X: 0")
+    report_output["Gender (F/M/X) - Current Year Cohort"] = report_output["Gender (F/M/X) - Current Year Cohort"].fillna("F: 0 / M: 0 / X: 0")
 
     report_output = report_output[
         [
             "Sport",
-            "TOTAL Athletes 2026 identified (Conv Data)",
+            "Current Year",
+            "TOTAL Athletes identified in Current Year (Conv Data)",
             "Sum of Total conversion Since 2022",
             "Sum of Total Conversion Provincial to national since 2022",
-            "2026 conversion Rate (Current Year convert / Current year total)",
-            "Carrer conversion rate for 2026 cohort",
-            "Average Years Targeted 2026 cohort (Career)",
-            "Average Age 2026 Cohort",
-            "Gender (F/M/X) - 2026 Cohort",
+            "Current Year conversion Rate (Current Year convert / Current year total)",
+            "Career conversion rate for Current Year cohort",
+            "Average Years Targeted Current Year cohort (Career)",
+            "Average Age Current Year Cohort",
+            "Gender (F/M/X) - Current Year Cohort",
         ]
     ].sort_values("Sport", key=lambda s: s.map(_sport_sort_key)).reset_index(drop=True)
 
@@ -602,27 +609,29 @@ def _build_via_sport_report(dff):
                 html.Thead([
                     html.Tr([
                         html.Th("Sport"),
-                        html.Th(f"TOTAL Athletes {CURRENT_YEAR} identified (Conv Data)"),
+                        html.Th("Current Year"),
+                        html.Th("TOTAL Athletes identified in Current Year (Conv Data)"),
                         html.Th("Sum of Total conversion Since 2022"),
                         html.Th("Sum of Total Conversion Provincial to national since 2022"),
-                        html.Th(f"{CURRENT_YEAR} conversion Rate (Current Year convert / Current year total)"),
-                        html.Th(f"Career conversion rate for {CURRENT_YEAR} cohort"),
-                        html.Th(f"Average Years Targeted {CURRENT_YEAR} cohort (Career)"),
-                        html.Th(f"Average Age {CURRENT_YEAR} Cohort"),
-                        html.Th(f"Gender (F/M/X) - {CURRENT_YEAR} Cohort"),
+                        html.Th("Current Year conversion Rate (Current Year convert / Current year total)"),
+                        html.Th("Career conversion rate for Current Year cohort"),
+                        html.Th("Average Years Targeted Current Year cohort (Career)"),
+                        html.Th("Average Age Current Year Cohort"),
+                        html.Th("Gender (F/M/X) - Current Year Cohort"),
                     ])
                 ]),
                 html.Tbody([
                     html.Tr([
                         html.Td(row["Sport"]),
-                        html.Td(row["TOTAL Athletes 2026 identified (Conv Data)"]),
+                        html.Td(row["Current Year"]),
+                        html.Td(row["TOTAL Athletes identified in Current Year (Conv Data)"]),
                         html.Td(row["Sum of Total conversion Since 2022"]),
                         html.Td(row["Sum of Total Conversion Provincial to national since 2022"]),
-                        html.Td(f"{row['2026 conversion Rate (Current Year convert / Current year total)']:.1f}%" if row["2026 conversion Rate (Current Year convert / Current year total)"] is not None else "—"),
-                        html.Td(f"{row['Carrer conversion rate for 2026 cohort']:.1f}%" if row["Carrer conversion rate for 2026 cohort"] is not None else "—"),
-                        html.Td(f"{row['Average Years Targeted 2026 cohort (Career)']:.2f}" if row["Average Years Targeted 2026 cohort (Career)"] is not None else "—"),
-                        html.Td(f"{row['Average Age 2026 Cohort']:.1f}" if row["Average Age 2026 Cohort"] is not None else "—"),
-                        html.Td(row["Gender (F/M/X) - 2026 Cohort"]),
+                        html.Td(f"{row['Current Year conversion Rate (Current Year convert / Current year total)']:.1f}%" if row["Current Year conversion Rate (Current Year convert / Current year total)"] is not None else "—"),
+                        html.Td(f"{row['Career conversion rate for Current Year cohort']:.1f}%" if row["Career conversion rate for Current Year cohort"] is not None else "—"),
+                        html.Td(f"{row['Average Years Targeted Current Year cohort (Career)']:.2f}" if row["Average Years Targeted Current Year cohort (Career)"] is not None else "—"),
+                        html.Td(f"{row['Average Age Current Year Cohort']:.1f}" if row["Average Age Current Year Cohort"] is not None else "—"),
+                        html.Td(row["Gender (F/M/X) - Current Year Cohort"]),
                     ])
                     for _, row in report_df.iterrows()
                 ]),
@@ -634,8 +643,8 @@ def _build_via_sport_report(dff):
 
     caption = html.Div(
         (
-            f"{CURRENT_YEAR} cohort metrics use {CURRENT_YEAR} rows only; the 2022+ conversion metrics are based on the current filtered view ({latest_year})."
-        ) if latest_year is not None else f"{CURRENT_YEAR} cohort metrics use {CURRENT_YEAR} rows only; the 2022+ conversion metrics are based on the current filtered view.",
+            f"Current Year is each sport's most recent year of data (shown in the Current Year column). Cohort metrics use that year's rows only; the 2022+ conversion metrics are based on the current filtered view ({latest_year})."
+        ) if latest_year is not None else f"Current Year is each sport's most recent year of data (shown in the Current Year column). Cohort metrics use that year's rows only; the 2022+ conversion metrics are based on the current filtered view.",
         style={"padding": "0 8px 8px 8px", "fontSize": "0.9rem", "opacity": 0.85},
     )
 
@@ -658,15 +667,15 @@ def _via_sport_report_csv(dff):
     Output("download-csv", "data"),
     Input("btn-download-csv", "n_clicks"),
     State("sport-dropdown", "value"),
-    State("has-2026-checkbox", "value"),
+    State("has-current-year-checkbox", "value"),
     State("css-checkbox", "value"),
     State("year-filter", "value"),
     prevent_initial_call=True,
 )
-def download_filtered_csv(n_clicks, selected_sports, filter_2026, filter_css, selected_years):
+def download_filtered_csv(n_clicks, selected_sports, filter_current, filter_css, selected_years):
     if not selected_sports:
         return dash.no_update
-    dff = _filter_dashboard_df(selected_sports, filter_2026, filter_css, selected_years)
+    dff = _filter_dashboard_df(selected_sports, filter_current, filter_css, selected_years)
     return dcc.send_data_frame(dff.to_csv, "conversion_data_filtered.csv", index=False)
 
 
@@ -697,12 +706,12 @@ def generate_all_sports_table(n_clicks):
     Output("year-filter", "options"),
     Output("year-filter", "value"),
     Input("sport-dropdown", "value"),
-    Input("has-2026-checkbox", "value"),
+    Input("has-current-year-checkbox", "value"),
 )
-def update_year_dropdown(selected_sports, filter_2026):
+def update_year_dropdown(selected_sports, filter_current):
     if not selected_sports:
         return [], []
-    dff = _filter_dashboard_df(selected_sports, filter_2026, [], None)
+    dff = _filter_dashboard_df(selected_sports, filter_current, [], None)
     years = sorted(dff['Year'].dropna().astype(int).unique())
     return [{"label": str(y), "value": y} for y in years], years
 
@@ -719,18 +728,18 @@ def update_year_dropdown(selected_sports, filter_2026):
     Output("program-pie-chart", "figure"),
     Output("age-conversion-pie-chart", "figure"),
     Input("sport-dropdown", "value"),
-    Input("has-2026-checkbox", "value"),
+    Input("has-current-year-checkbox", "value"),
     Input("css-checkbox", "value"),
     Input("year-filter", "value"),
     Input("age-pie-program-filter", "value"),
 )
-def update_graphs(selected_sports, filter_2026, filter_css, selected_years, prog_filter):
+def update_graphs(selected_sports, filter_current, filter_css, selected_years, prog_filter):
     if not selected_sports:
         empty = go.Figure()
         msg   = html.Div("No sport(s) selected.", style={"padding": "8px"})
         return empty, msg, html.Div(), empty, empty, empty, empty, empty, empty, empty
 
-    dff = _filter_dashboard_df(selected_sports, filter_2026, filter_css, selected_years)
+    dff = _filter_dashboard_df(selected_sports, filter_current, filter_css, selected_years)
 
     via_sport_report = _build_via_sport_report(dff)
 
