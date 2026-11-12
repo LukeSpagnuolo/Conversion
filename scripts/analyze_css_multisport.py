@@ -8,7 +8,7 @@ from pathlib import Path
 BASE_DIR = Path("/workspaces/Conversion")
 
 print("Loading final dataset...")
-df = pd.read_csv(BASE_DIR / "Conversion_Data_2026_final.csv")
+df = pd.read_csv(BASE_DIR / "Conversion_Data.csv")
 
 print(f"Total rows: {len(df)}")
 print(f"Total CSS athletes: {(df['CSS'] == 'YES').sum()}")

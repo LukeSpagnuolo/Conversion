@@ -6,7 +6,7 @@ A Plotly Dash application that visualises athlete carding conversion data. Deplo
 
 ```
 Conversion_Dashboard_v2.py   ← main app (Posit Connect entry point)
-Conversion_Data_2026_final.csv ← dataset
+Conversion_Data.csv ← dataset
 requirements.txt             ← Python dependencies
 manifest.json                ← Posit Connect deployment manifest
 .env.example                 ← template for local environment variables

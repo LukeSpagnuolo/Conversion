@@ -62,8 +62,8 @@ for prog in sorted(nomination_formatted['Program'].unique()):
 print()
 
 # Load the current final dataset
-print("Loading Conversion_Data_2026_final.csv...")
-final_df = pd.read_csv(BASE_DIR / "Conversion_Data_2026_final.csv")
+print("Loading Conversion_Data.csv...")
+final_df = pd.read_csv(BASE_DIR / "Conversion_Data.csv")
 print(f"  Total rows: {len(final_df):,}")
 print(f"  2026 rows: {len(final_df[final_df['Year'] == 2026]):,}")
 print()
@@ -83,7 +83,7 @@ print()
 combined = combined.sort_values(['Full_Name', 'Year']).reset_index(drop=True)
 
 # Save the updated dataset
-output_file = BASE_DIR / "Conversion_Data_2026_final.csv"
+output_file = BASE_DIR / "Conversion_Data.csv"
 combined.to_csv(output_file, index=False)
 
 print(f"✓ Saved updated dataset: {output_file}")

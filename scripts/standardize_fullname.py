@@ -2,7 +2,7 @@ import pandas as pd
 import re
 
 # Read the CSV file
-df = pd.read_csv('Conversion_Data_2026_final.csv')
+df = pd.read_csv('Conversion_Data.csv')
 
 # Standardize Full_Name column: lowercase, no spaces, no special characters
 def standardize_name(name):
@@ -19,7 +19,7 @@ def standardize_name(name):
 df['Full_Name'] = df['Full_Name'].apply(standardize_name)
 
 # Save the updated CSV
-df.to_csv('Conversion_Data_2026_final.csv', index=False)
+df.to_csv('Conversion_Data.csv', index=False)
 
 print("✓ Full_Name column standardized successfully!")
 print("\nSample of standardized names:")

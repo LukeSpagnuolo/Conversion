@@ -9,7 +9,7 @@ from pathlib import Path
 BASE_DIR = Path("/workspaces/Conversion")
 
 print("Loading final dataset...")
-df = pd.read_csv(BASE_DIR / "Conversion_Data_2026_final.csv")
+df = pd.read_csv(BASE_DIR / "Conversion_Data.csv")
 
 print(f"Initial dataset: {len(df)} rows")
 print(f"Initial CSS entries: {(df['CSS'] == 'YES').sum()}")
@@ -87,7 +87,7 @@ else:
     print("No CSS athletes in final dataset")
 
 # Save
-output_file = BASE_DIR / "Conversion_Data_2026_final.csv"
+output_file = BASE_DIR / "Conversion_Data.csv"
 df.to_csv(output_file, index=False)
 print()
 print(f"✓ Saved: {output_file}")

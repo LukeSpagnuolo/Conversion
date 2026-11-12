@@ -10,7 +10,7 @@ from difflib import SequenceMatcher
 BASE_DIR = Path("/workspaces/Conversion")
 
 print("Loading final dataset...")
-df = pd.read_csv(BASE_DIR / "Conversion_Data_2026_final.csv")
+df = pd.read_csv(BASE_DIR / "Conversion_Data.csv")
 print(f"Total rows: {len(df)}")
 print(f"Unique athletes: {(df['First Name'].astype(str) + ' ' + df['Last Name'].astype(str)).nunique()}")
 print()
@@ -153,7 +153,7 @@ print(f"  Convert N: {(df['Convert_Year'] == 'N').sum()}")
 print()
 
 # Save consolidated dataset
-output_file = BASE_DIR / "Conversion_Data_2026_final.csv"
+output_file = BASE_DIR / "Conversion_Data.csv"
 df.to_csv(output_file, index=False)
 
 print("Final Statistics:")

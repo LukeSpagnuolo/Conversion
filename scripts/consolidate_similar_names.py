@@ -3,7 +3,7 @@ from difflib import SequenceMatcher
 from collections import defaultdict
 
 # Read the CSV file
-df = pd.read_csv('Conversion_Data_2026_final.csv')
+df = pd.read_csv('Conversion_Data.csv')
 name_counts = df['Full_Name'].value_counts().to_dict()
 unique_names = sorted(name_counts.keys())
 
@@ -95,7 +95,7 @@ for cons in qualified_consolidations:
 df_consolidated = df_consolidated.sort_values('Full_Name').reset_index(drop=True)
 
 # Save the consolidated CSV
-df_consolidated.to_csv('Conversion_Data_2026_final.csv', index=False)
+df_consolidated.to_csv('Conversion_Data.csv', index=False)
 
 print("✓ Consolidation complete!")
 print(f"\n📊 Summary:")
@@ -105,4 +105,4 @@ print(f"   Duplicate rows removed: {rows_removed_duplicates}")
 print(f"   Original row count: {len(df)}")
 print(f"   New row count: {len(df_consolidated)}")
 print(f"   Net reduction: {len(df) - len(df_consolidated)} rows")
-print(f"\n✓ File saved: Conversion_Data_2026_final.csv")
+print(f"\n✓ File saved: Conversion_Data.csv")

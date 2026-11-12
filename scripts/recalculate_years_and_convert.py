@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 
-df = pd.read_csv('Conversion_Data_2026_final.csv')
+df = pd.read_csv('Conversion_Data.csv')
 
 # Define program hierarchy
 program_hierarchy = {
@@ -106,7 +106,7 @@ for athlete_name in df['Full_Name'].unique():
 print(f"✓ Convert Year recalculated")
 
 # Save
-df.to_csv('Conversion_Data_2026_final.csv', index=False)
+df.to_csv('Conversion_Data.csv', index=False)
 
 print(f"\n✓ File saved!")
 print(f"\nSummary:")

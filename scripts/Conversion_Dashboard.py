@@ -23,7 +23,7 @@ except ImportError:
 
 from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
-DF_PATH = BASE_DIR / "Conversion_Data_2026_final.csv"
+DF_PATH = BASE_DIR / "Conversion_Data.csv"
 df = pd.read_csv(DF_PATH)
 
 sports = df['Sport'].sort_values().unique()

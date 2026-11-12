@@ -1,6 +1,6 @@
 """Check a List Generator 7000 nominations export against the conversion dataset.
 
-usage: check_nominations.py <export.csv> <Conversion_Data_2026_final.csv> <out_dir>
+usage: check_nominations.py <export.csv> <Conversion_Data.csv> <out_dir>
 Matching rule: name + DOB + sport (sport groups as in clean_dataset.py).
 """
 import re
