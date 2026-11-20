@@ -43,6 +43,8 @@ if BOOTSTRAP_AVAILABLE:
     from navbar import Navbar
     from footer import Footer
 
+import ee_metrics
+
 BASE_DIR = Path(__file__).resolve().parent
 
 # ── OAuth / URL Config ──────────────────────────────────────────────────────
@@ -137,6 +139,17 @@ df["_program_level"] = df["Program"].astype(str).str.strip().map({
 
 sports        = df['Sport'].sort_values().unique()
 sport_options = [{"label": s, "value": s} for s in sports]
+EE_DEFAULT_SPORTS = ee_metrics.default_ee_sports(sports)
+EE_DEFAULT_YEAR = ee_metrics.last_full_year(df["_year_num"].dropna().unique())
+EE_YEAR_OPTIONS = [
+    {
+        "label": f"{int(year) - 1}-{str(int(year))[2:]} ({int(year)})"
+        + (" — last full year" if int(year) == EE_DEFAULT_YEAR else "")
+        + (" — in progress" if EE_DEFAULT_YEAR and int(year) > EE_DEFAULT_YEAR else ""),
+        "value": int(year),
+    }
+    for year in sorted(df["_year_num"].dropna().unique(), reverse=True)
+] + [{"label": "Each sport's latest year", "value": "latest"}]
 
 # ── Color / Theme ─────────────────────────────────────────────────────────────
 COLOR_RED      = "#DC3545"
@@ -289,6 +302,44 @@ app.layout = html.Div([
                     dbc.Button("Generate All Sports Table", id="btn-generate-all-sports-table", color="danger", className="me-2 mb-3"),
                     dbc.Button("⬇ Download Via Sport CSV", id="btn-download-via-sport-csv", color="success", className="mb-3"),
                     dcc.Loading(html.Div(id="all-sports-table-output"), type="dot"),
+                ], style={"padding": "16px 0"}),
+            ]),
+            dcc.Tab(label="EE Metrics", value="ee-metrics-tab", children=[
+                html.Div([
+                    html.P(
+                        "Conversion metrics for the EE Metrics sheet, one row per Enhanced Excellence sport. "
+                        "The sports and merged sports follow List Generator's EE Sport Templates tab."
+                    ),
+                    dbc.Row([
+                        dbc.Col([
+                            html.Label("EE sports:"),
+                            dcc.Dropdown(
+                                id="ee-metrics-sports",
+                                options=sport_options,
+                                value=EE_DEFAULT_SPORTS,
+                                multi=True,
+                                style={"width": "100%"},
+                            ),
+                        ], xs=12, md=9),
+                        dbc.Col([
+                            html.Label("Report year:"),
+                            dcc.Dropdown(
+                                id="ee-metrics-year",
+                                options=EE_YEAR_OPTIONS,
+                                value=EE_DEFAULT_YEAR or "latest",
+                                clearable=False,
+                                style={"width": "100%"},
+                            ),
+                        ], xs=12, md=3),
+                    ], className="mb-3"),
+                    dbc.Button("Reset to EE sports", id="btn-ee-metrics-reset", color="secondary", className="me-2 mb-3"),
+                    dbc.Button("⬇ Download EE Metrics CSV", id="btn-download-ee-metrics", color="success", className="mb-3"),
+                    dcc.Download(id="download-ee-metrics"),
+                    dcc.Loading(html.Div(id="ee-metrics-output"), type="dot"),
+                    html.Details([
+                        html.Summary("How these metrics are calculated"),
+                        html.P(ee_metrics.GUIDE, style={"fontSize": "0.9rem", "opacity": 0.85}),
+                    ], style={"marginTop": "12px"}),
                 ], style={"padding": "16px 0"}),
             ]),
         ])
@@ -700,6 +751,91 @@ def download_via_sport_csv(n_clicks):
 def generate_all_sports_table(n_clicks):
     report = _build_via_sport_report(df)
     return report
+
+
+def _ee_metrics_year(value):
+    return None if value in (None, "latest") else int(value)
+
+
+def _ee_metrics_table(report_df):
+    if report_df.empty:
+        return html.Div("No conversion data for the selected sports.", style={"padding": "8px"})
+
+    def cell(value, suffix=""):
+        return "—" if value is None or pd.isna(value) else f"{value}{suffix}"
+
+    partial = report_df[report_df[ee_metrics.COL_PARTIAL]]
+    note = None
+    if not partial.empty:
+        note = html.Div(
+            "The report year looks incomplete (under half the previous year's athletes, or no Prov Dev "
+            "athletes yet) for: "
+            + ", ".join(partial[ee_metrics.COL_SPORT])
+            + ". That year's nominations probably aren't all in yet; choose an earlier report year.",
+            style={"padding": "0 8px 8px 8px", "fontSize": "0.9rem", "color": COLOR_RED},
+        )
+    table = html.Div(
+        html.Table(
+            [
+                html.Thead(html.Tr([html.Th(name) for name in ee_metrics.COLUMNS])),
+                html.Tbody([
+                    html.Tr([
+                        html.Td(row[ee_metrics.COL_SPORT]),
+                        html.Td(row[ee_metrics.COL_MEMBERS]),
+                        html.Td(row[ee_metrics.COL_YEAR]),
+                        html.Td(row[ee_metrics.COL_WINDOW]),
+                        html.Td(row[ee_metrics.COL_ATHLETES]),
+                        html.Td(cell(row[ee_metrics.COL_ANY], "%")),
+                        html.Td(cell(row[ee_metrics.COL_NATIONAL], "%")),
+                        html.Td(cell(row[ee_metrics.COL_YEARS_TARGETED])),
+                    ])
+                    for _, row in report_df.iterrows()
+                ]),
+            ],
+            className="conversion-summary-table",
+        ),
+        style={"overflowX": "auto"},
+    )
+    return html.Div([html.H3("EE Metrics", style={"margin": "8px 0 6px 0"}), note, table])
+
+
+@app.callback(
+    Output("ee-metrics-sports", "value"),
+    Input("btn-ee-metrics-reset", "n_clicks"),
+    prevent_initial_call=True,
+)
+def reset_ee_metrics_sports(n_clicks):
+    return EE_DEFAULT_SPORTS
+
+
+@app.callback(
+    Output("ee-metrics-output", "children"),
+    Input("ee-metrics-sports", "value"),
+    Input("ee-metrics-year", "value"),
+)
+def update_ee_metrics(selected_sports, report_year):
+    if not selected_sports:
+        return html.Div("Select one or more sports.", style={"padding": "8px"})
+    return _ee_metrics_table(ee_metrics.build_ee_metrics(df, selected_sports, _ee_metrics_year(report_year)))
+
+
+@app.callback(
+    Output("download-ee-metrics", "data"),
+    Input("btn-download-ee-metrics", "n_clicks"),
+    State("ee-metrics-sports", "value"),
+    State("ee-metrics-year", "value"),
+    prevent_initial_call=True,
+)
+def download_ee_metrics(n_clicks, selected_sports, report_year):
+    if not selected_sports:
+        return dash.no_update
+    year = _ee_metrics_year(report_year)
+    report_df = ee_metrics.build_ee_metrics(df, selected_sports, year)
+    if report_df.empty:
+        return dash.no_update
+    return dcc.send_data_frame(
+        report_df[ee_metrics.COLUMNS].to_csv, f"ee_metrics_{year or 'latest'}.csv", index=False
+    )
 
 
 @app.callback(
