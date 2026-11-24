@@ -24,25 +24,33 @@ class EEMetricsTests(unittest.TestCase):
         self.assertEqual(groups["Wheelchair Basketball"], ["Wheelchair Basketball"])
         self.assertEqual(len(groups), 4)
 
-    def test_metrics_average_yearly_rates_over_four_years(self):
+    def test_conversions_are_measured_against_last_years_pool(self):
         df = pd.DataFrame([
-            # 2023: 2 athletes, 1 conversion (A moves Prov Dev -> Uncarded next year too)
-            row("a", "Rowing", 2023, "Prov Dev 2"), row("b", "Rowing", 2023, "Prov Dev 1", "Y"),
-            # 2024: 2 athletes, 1 national conversion (a: Prov Dev 2 -> SC Carded)
-            row("a", "Rowing", 2024, "SC Carded", "Y"), row("b", "Para Rowing", 2024, "Prov Dev 1"),
-            # 2025 and 2026: 1 athlete, no conversions; a 2019 conversion is outside the window
-            row("b", "Rowing", 2025, "Prov Dev 1", years_targeted=3),
-            row("b", "Rowing", 2026, "Prov Dev 1", years_targeted=4),
-            row("c", "Rowing", 2019, "Prov Dev 1", "Y"),
+            # 2022 (pool year only): a, b Prov Dev; d Can Dev (Uncarded)
+            row("a", "Rowing", 2022, "Prov Dev 2"), row("b", "Rowing", 2022, "Prov Dev 1"),
+            row("d", "Rowing", 2022, "Uncarded"),
+            # 2023: b Prov Dev -> Uncarded (any + Prov→Nat); d Uncarded -> SC Carded (any only);
+            # e is flagged but has no 2022 row, so isn't counted
+            row("a", "Rowing", 2023, "Prov Dev 2"), row("b", "Rowing", 2023, "Uncarded", "Y"),
+            row("d", "Rowing", 2023, "SC Carded", "Y"), row("e", "Rowing", 2023, "Prov Dev 1", "Y"),
+            # 2024: a Prov Dev -> SC Carded (any + Prov→Nat); Para Rowing counts with Rowing
+            row("a", "Rowing", 2024, "SC Carded", "Y"), row("b", "Para Rowing", 2024, "Uncarded"),
+            row("b", "Rowing", 2025, "Uncarded"), row("f", "Rowing", 2025, "Prov Dev 1", years_targeted=3),
+            row("f", "Rowing", 2026, "Prov Dev 1", years_targeted=4),
+            row("c", "Rowing", 2019, "Prov Dev 1", "Y"),  # outside the window
         ])
         result = m.build_ee_metrics(df, ["Rowing", "Para Rowing"]).iloc[0]
         self.assertEqual(result[m.COL_SPORT], "Rowing")
         self.assertEqual(result[m.COL_YEAR], 2026)
         self.assertEqual(result[m.COL_WINDOW], "2023–2026")
         self.assertEqual(result[m.COL_ATHLETES], 1)
-        self.assertEqual(result[m.COL_ANY], round((0.5 + 0.5 + 0 + 0) / 4 * 100, 1))
-        self.assertEqual(result[m.COL_NATIONAL], round((0 + 0.5 + 0 + 0) / 4 * 100, 1))
+        # Pools 2022–2025: any-level 3 + 3 + 1 + 2 = 9 athlete-years; Prov Dev 2 + 2 + 0 + 1 = 5.
+        self.assertEqual((result[m.COL_ABS_ANY], result[m.COL_ABS_NATIONAL]), (3, 2))
+        self.assertEqual((result[m.COL_AVG_ANY_POOL], result[m.COL_AVG_PROV_POOL]), (2.25, 1.25))
+        self.assertEqual(result[m.COL_ANY], round(3 / 9 * 100, 1))
+        self.assertEqual(result[m.COL_NATIONAL], 40.0)
         self.assertEqual(result[m.COL_YEARS_TARGETED], 4)
+        self.assertEqual([result[name] for name in m.RAW_COLUMNS], [9, 5, 1, 4])
         self.assertFalse(result[m.COL_PARTIAL])
 
     def test_report_year_can_be_chosen_and_partial_years_flagged(self):

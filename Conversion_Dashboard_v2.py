@@ -788,6 +788,10 @@ def _ee_metrics_table(report_df):
                         html.Td(cell(row[ee_metrics.COL_ANY], "%")),
                         html.Td(cell(row[ee_metrics.COL_NATIONAL], "%")),
                         html.Td(cell(row[ee_metrics.COL_YEARS_TARGETED])),
+                        *[
+                            html.Td(cell(row[name]))
+                            for name in ee_metrics.EXTRA_METRIC_COLUMNS + ee_metrics.RAW_COLUMNS
+                        ],
                     ])
                     for _, row in report_df.iterrows()
                 ]),

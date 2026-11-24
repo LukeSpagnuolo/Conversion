@@ -34,6 +34,9 @@ WHEELCHAIR_GROUP_LABEL = "Wheelchair sports"
 PROGRAM_LEVELS = {"Prov Dev 3": 1, "Prov Dev 2": 2, "Prov Dev 1": 3, "Uncarded": 4, "SC Carded": 5}
 PROV_DEV_LEVELS = {1, 2, 3}
 NATIONAL_LEVELS = {4, 5}
+# Who can convert to a higher level: Prov Dev 3/2/1 and Can Dev (Uncarded in the dataset). SC
+# Carded is the top level, so it isn't in the any-level pool.
+ANY_POOL_LEVELS = {1, 2, 3, 4}
 WINDOW_YEARS = 4
 
 COL_SPORT = "Sport"
@@ -44,7 +47,22 @@ COL_ATHLETES = "Athletes in report year"
 COL_ANY = "% Avg Conversions to Any Level (4y)"
 COL_NATIONAL = "% Avg Conversion Prov→Nat (4y)"
 COL_YEARS_TARGETED = "Avg Years Targeted (Prov Dev, report year)"
-COLUMNS = [COL_SPORT, COL_MEMBERS, COL_YEAR, COL_WINDOW, COL_ATHLETES, COL_ANY, COL_NATIONAL, COL_YEARS_TARGETED]
+COL_ABS_ANY = "Absolute Any level conversion (4 Yr)"
+COL_ABS_NATIONAL = "Absolute Prov to Nat conversion (4 Yr)"
+COL_AVG_PROV_POOL = "Avg Prov Nomination over 4 years (PD3, 2, 1)"
+COL_AVG_ANY_POOL = "Avg Any Nomination over 4 years (PD3, 2, 1, Can Dev)"
+# Columns added to the EE report's EE Metrics sheet (after the three above).
+EXTRA_METRIC_COLUMNS = [COL_ABS_ANY, COL_ABS_NATIONAL, COL_AVG_PROV_POOL, COL_AVG_ANY_POOL]
+# Raw totals for the EE report's Summary sheet.
+COL_ANY_POOL_TOTAL = "Any-level pool, athlete-years (4 Yr)"
+COL_PROV_POOL_TOTAL = "Prov pool, athlete-years (4 Yr)"
+COL_PROV_DEV = "Prov Dev athletes in report year"
+COL_YEARS_TOTAL = "Total years targeted (Prov Dev, report year)"
+RAW_COLUMNS = [COL_ANY_POOL_TOTAL, COL_PROV_POOL_TOTAL, COL_PROV_DEV, COL_YEARS_TOTAL]
+COLUMNS = [
+    COL_SPORT, COL_MEMBERS, COL_YEAR, COL_WINDOW, COL_ATHLETES, COL_ANY, COL_NATIONAL, COL_YEARS_TARGETED,
+    *EXTRA_METRIC_COLUMNS, *RAW_COLUMNS,
+]
 # Not exported: True when the report year has under half the previous year's athletes, or no
 # Prov Dev athletes after a year that had some; usually that year's nominations aren't all in.
 COL_PARTIAL = "_partial_year"
@@ -56,11 +74,15 @@ GUIDE = (
     "Report year defaults to the last full fiscal year (dataset Year N is fiscal N-1 to N, ending "
     "31 March of N), so a year whose nominations are still coming in is left out; the 4-year "
     "window ends at the report year. "
-    "Conversions to Any Level: for each year in the window, athletes with a conversion that year "
-    "÷ athletes in the sport that year; the column is the average of those yearly rates. "
-    "Prov→Nat uses only conversions from Prov Dev to Uncarded/SC Carded in consecutive years "
-    "(the dashboard's provincial-to-national rule). Avg Years Targeted is the career Years "
-    "Targeted of athletes at Prov Dev 1–3 in the report year."
+    "Each conversion is measured against the pool it came from, the year before: Any level counts "
+    "athletes flagged as converting in a window year who were at Prov Dev 3/2/1 or Can Dev "
+    "(Uncarded) the year before; Prov→Nat counts athletes at Prov Dev 3/2/1 the year before who "
+    "are Uncarded or SC Carded and flagged as converting. A conversion with no row the year before "
+    "(gap year, first year in the data) isn't counted. Absolute = conversions over the 4 years; "
+    "Avg Nomination = average pool size over the 4 years before each conversion year (e.g. "
+    "2022–2025 for a 2026 report); % = Absolute ÷ (4 × Avg Nomination). Avg Years Targeted is the "
+    "career Years Targeted of athletes at Prov Dev 1–3 in the report year. The last four columns "
+    "are raw totals for the EE report's Summary sheet."
 )
 
 
@@ -144,11 +166,14 @@ def _yearly_athletes(rows: pd.DataFrame) -> pd.DataFrame:
     )
     previous_year = yearly.groupby("Full_Name")["_year"].shift(1)
     previous_level = yearly.groupby("Full_Name")["level"].shift(1)
+    consecutive = yearly["_year"].eq(previous_year + 1)
+    # A conversion counts only when the athlete was in that conversion's pool the year before.
+    yearly["any_conversion"] = yearly["converted"] & consecutive & previous_level.isin(ANY_POOL_LEVELS)
     yearly["national"] = (
         yearly["converted"]
         & yearly["level"].isin(NATIONAL_LEVELS)
         & previous_level.isin(PROV_DEV_LEVELS)
-        & yearly["_year"].eq(previous_year + 1)
+        & consecutive
     )
     return yearly
 
@@ -163,11 +188,14 @@ def sport_metrics(rows: pd.DataFrame, report_year: int | None = None) -> dict:
     if yearly.empty:
         return {}
     report_year = int(report_year) if report_year else int(yearly["_year"].max())
-    window = yearly[yearly["_year"].between(report_year - WINDOW_YEARS + 1, report_year)]
-    per_year = window.groupby("_year").agg(
-        athletes=("Full_Name", "size"), converted=("converted", "sum"), national=("national", "sum")
-    )
-    per_year = per_year[per_year["athletes"] > 0]
+    first_year = report_year - WINDOW_YEARS + 1
+    window = yearly[yearly["_year"].between(first_year, report_year)]
+    # The pools are the 4 years before each conversion year.
+    pool_years = yearly[yearly["_year"].between(first_year - 1, report_year - 1)]
+    any_conversions = int(window["any_conversion"].sum())
+    national_conversions = int(window["national"].sum())
+    any_pool = int(pool_years["level"].isin(ANY_POOL_LEVELS).sum())
+    prov_pool = int(pool_years["level"].isin(PROV_DEV_LEVELS).sum())
     current = yearly[yearly["_year"].eq(report_year)]
     previous = yearly[yearly["_year"].eq(report_year - 1)]
     prov_dev = current[current["level"].isin(PROV_DEV_LEVELS)]
@@ -175,9 +203,18 @@ def sport_metrics(rows: pd.DataFrame, report_year: int | None = None) -> dict:
         COL_YEAR: report_year,
         COL_WINDOW: f"{report_year - WINDOW_YEARS + 1}–{report_year}",
         COL_ATHLETES: int(len(current)),
-        COL_ANY: _round((per_year["converted"] / per_year["athletes"]).mean() * 100, 1),
-        COL_NATIONAL: _round((per_year["national"] / per_year["athletes"]).mean() * 100, 1),
+        COL_ANY: _round(any_conversions / any_pool * 100, 1) if any_pool else None,
+        COL_NATIONAL: _round(national_conversions / prov_pool * 100, 1) if prov_pool else None,
         COL_YEARS_TARGETED: _round(prov_dev["years_targeted"].mean(), 2),
+        COL_ABS_ANY: any_conversions,
+        COL_ABS_NATIONAL: national_conversions,
+        COL_AVG_PROV_POOL: round(prov_pool / WINDOW_YEARS, 2),
+        COL_AVG_ANY_POOL: round(any_pool / WINDOW_YEARS, 2),
+        COL_ANY_POOL_TOTAL: any_pool,
+        COL_PROV_POOL_TOTAL: prov_pool,
+        # Only athletes with a Years Targeted value, the same ones the average uses.
+        COL_PROV_DEV: int(prov_dev["years_targeted"].notna().sum()),
+        COL_YEARS_TOTAL: _round(prov_dev["years_targeted"].sum(), 2),
         COL_PARTIAL: bool(
             len(current) < len(previous) / 2
             or (prov_dev.empty and previous["level"].isin(PROV_DEV_LEVELS).any())
